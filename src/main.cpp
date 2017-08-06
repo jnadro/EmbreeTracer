@@ -43,9 +43,9 @@ int main(int argc, char* argv[])
 	{
 		Vertex* vertices = (Vertex*)rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 		assert(vertices);
-		vertices[0].x = 0.0f; vertices[0].y = 1.0f; vertices[0].z = 0.0f; vertices[0].a = 1.0f;
-		vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f; vertices[1].a = 1.0f;
-		vertices[2].x = 0.0f; vertices[1].y = 0.0f; vertices[1].z = 0.0f; vertices[1].a = 1.0f;
+		vertices[0].x = 0.0f; vertices[0].y = 1.0f; vertices[0].z = -2.0f; vertices[0].a = 1.0f;
+		vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = -2.0f; vertices[1].a = 1.0f;
+		vertices[2].x = 0.0f; vertices[2].y = 0.0f; vertices[2].z = -2.0f; vertices[2].a = 1.0f;
 		rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 	}
 	{
@@ -60,16 +60,16 @@ int main(int argc, char* argv[])
 	RTCRay cameraRay;
 	cameraRay.org[0] = 0.0f;
 	cameraRay.org[1] = 0.0f;
-	cameraRay.org[2] = -1.0f;
+	cameraRay.org[2] = 0.0f;
 
 	cameraRay.dir[0] = 0.0f;
 	cameraRay.dir[1] = 0.0f;
-	cameraRay.dir[2] = 1.0f;
+	cameraRay.dir[2] = -1.0f;
 
 	cameraRay.tnear = 0.0f;
 	cameraRay.tfar = std::numeric_limits<float>::max();
 	cameraRay.time = 0.0f;
-	cameraRay.mask = 0.0f;
+	cameraRay.mask = 0;
 	cameraRay.geomID = RTC_INVALID_GEOMETRY_ID;
 	cameraRay.primID = RTC_INVALID_GEOMETRY_ID;
 
