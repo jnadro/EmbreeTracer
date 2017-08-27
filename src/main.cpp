@@ -5,7 +5,6 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
-#include "Mesh.h"
 #include "PPMImage.h"
 
 static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* str)
@@ -30,8 +29,14 @@ static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* s
 	}
 }
 
-struct Vertex { float x, y, z, a; };
+struct vec4 { float x, y, z, a; };
 struct Triangle { int v0, v1, v2; };
+
+vec4 colors[4] = {
+	{ 0.0f, 0.0f, 0.0f, 1.0f },
+	{ 1.0f, 1.0f, 0.0f, 1.0f },
+	{ 0.0f, 1.0f, 0.0f, 1.0f },
+	{ 1.0f, 0.0f, 0.0f, 1.0f } };
 
 struct vec3 
 { 
@@ -78,34 +83,33 @@ int main(int argc, char* argv[])
 
 	rtcDeviceSetErrorFunction2(device, EmbreeErrorHandler, nullptr);
 
-	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1);
+	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1 | RTC_INTERPOLATE);
 
-	if (0)
+	unsigned quad = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, 2, 4);
 	{
-		unsigned triangle = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, 1, 3);
-		{
-			Vertex* vertices = (Vertex*)rtcMapBuffer(scene, triangle, RTC_VERTEX_BUFFER);
-			assert(vertices);
-			vertices[0].x = 0.0f; vertices[0].y = 1.0f; vertices[0].z = -1.0f; vertices[0].a = 1.0f;
-			vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = -1.0f; vertices[1].a = 1.0f;
-			vertices[2].x = 0.0f; vertices[2].y = 0.0f; vertices[2].z = -1.0f; vertices[2].a = 1.0f;
-			rtcUnmapBuffer(scene, triangle, RTC_VERTEX_BUFFER);
-		}
-		{
-			Triangle* triangles = (Triangle*)rtcMapBuffer(scene, triangle, RTC_INDEX_BUFFER);
-			assert(triangles);
-			triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-			rtcUnmapBuffer(scene, triangle, RTC_INDEX_BUFFER);
-		}
-	}
+		vec4* vertices = (vec4*)rtcMapBuffer(scene, quad, RTC_VERTEX_BUFFER);
+		assert(vertices);
+		vertices[0].x = 0.0f; vertices[0].y = 1.0f; vertices[0].z = -1.0f; vertices[0].a = 1.0f;
+		vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = -1.0f; vertices[1].a = 1.0f;
+		vertices[2].x = 0.0f; vertices[2].y = 0.0f; vertices[2].z = -1.0f; vertices[2].a = 1.0f;
+		vertices[3].x = 1.0f; vertices[3].y = 1.0f; vertices[3].z = -1.0f; vertices[3].a = 1.0f;
+		rtcUnmapBuffer(scene, quad, RTC_VERTEX_BUFFER);
 
-	unsigned cube = LoadMesh("sphere.obj", scene);
+		rtcSetBuffer2(scene, quad, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(vec4));
+	}
+	{
+		Triangle* triangles = (Triangle*)rtcMapBuffer(scene, quad, RTC_INDEX_BUFFER);
+		assert(triangles);
+		triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+		triangles[1].v0 = 0; triangles[1].v1 = 3; triangles[1].v2 = 1;
+		rtcUnmapBuffer(scene, quad, RTC_INDEX_BUFFER);
+	}
 
 	rtcCommit(scene);
 
 	// start tracing
 	{
-		unsigned width = 400;
+		unsigned width = 200;
 		unsigned height = 200;
 		const float aspectRatio = (float)width / height;
 
@@ -146,7 +150,9 @@ int main(int argc, char* argv[])
 				rtcIntersect(scene, cameraRay);
 				if (cameraRay.geomID != RTC_INVALID_GEOMETRY_ID)
 				{
-					colorAOV.SetPixel(x, y, 1.0f, 0.0f, 1.0f);
+					vec4 color;
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &color.x, nullptr, nullptr, nullptr, nullptr, nullptr, 4);
+					colorAOV.SetPixel(x, y, color.x, color.y, color.z);
 				}
 				else
 				{
@@ -158,8 +164,7 @@ int main(int argc, char* argv[])
 		colorAOV.Write("color.ppm");
 	}
 
-	//rtcDeleteGeometry(scene, triangle);
-	rtcDeleteGeometry(scene, cube);
+	rtcDeleteGeometry(scene, quad);
 	rtcDeleteScene(scene);
 	rtcDeleteDevice(device);
 
