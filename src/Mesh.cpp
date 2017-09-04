@@ -5,10 +5,13 @@
 #define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #include "tiny_obj_loader.h"
 
-struct Vertex { float x, y, z, a; };
+struct Vertex { float x, y, z, w; };
+struct Normal { float x, y, z; };
+struct TextureCoord { float u, v; };
 struct Triangle { int v0, v1, v2; };
+const size_t alignment = 16;
 
-unsigned LoadMesh(const std::string & Filename, RTCScene Scene)
+TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -20,7 +23,7 @@ unsigned LoadMesh(const std::string & Filename, RTCScene Scene)
 	if (ret == false || shapes.size() < 1)
 	{
 		std::cerr << err << std::endl;
-		return RTC_INVALID_GEOMETRY_ID;
+		return false;
 	}
 
 	// only deal with first shape.
@@ -29,34 +32,80 @@ unsigned LoadMesh(const std::string & Filename, RTCScene Scene)
 	const size_t numTriangles = shape.mesh.num_face_vertices.size();
 	const size_t numVertices = attrib.vertices.size() / 3;
 
-	unsigned geomID = rtcNewTriangleMesh2(Scene, RTC_GEOMETRY_STATIC, numTriangles, numVertices);
+	// ineffcient
+	std::vector<int> indices;
+	indices.reserve(shape.mesh.indices.size());
+	for (size_t i = 0; i < shape.mesh.indices.size(); ++i)
+	{
+		indices.push_back(shape.mesh.indices[i].vertex_index);
+	}
+
+	return new TriangleMesh(scene, attrib.vertices, attrib.normals, attrib.texcoords, indices, numTriangles, numVertices);
+}
+
+TriangleMesh::TriangleMesh(
+	RTCScene InScene, 
+	const std::vector<float>& p, 
+	const std::vector<float>& n, 
+	const std::vector<float>& uvs,
+	const std::vector<int>& indices,
+	size_t numTriangles, 
+	size_t numVertices)
+	: scene(InScene)
+{
+	geomID = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, numTriangles, numVertices);
 
 	{
-		Vertex* vertices = (Vertex*)rtcMapBuffer(Scene, geomID, RTC_VERTEX_BUFFER);
+		Vertex* vertices = (Vertex*)rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 		assert(vertices);
 		for (size_t v = 0; v < numVertices; ++v)
 		{
-			vertices[v].x = attrib.vertices[3 * v + 0];
-			vertices[v].y = attrib.vertices[3 * v + 1];
-			vertices[v].z = attrib.vertices[3 * v + 2];
+			vertices[v].x = p[3 * v + 0];
+			vertices[v].y = p[3 * v + 1];
+			vertices[v].z = p[3 * v + 2];
+			vertices[v].w = 1.0f;
 		}
-		rtcUnmapBuffer(Scene, geomID, RTC_VERTEX_BUFFER);
+		rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+	}
+
+	if (uvs.size())
+	{
+		const size_t numBytes = uvs.size() * sizeof(float);
+		assert((uvs.size() / 2) == numVertices);
+		uv = static_cast<TextureCoord*>(_aligned_malloc(numBytes, alignment));
+		for (size_t v = 0; v < numVertices; ++v)
+		{
+			uv[0].u = uvs[2 * v + 0];
+			uv[0].v = uvs[2 * v + 1];
+		}
+		rtcSetBuffer2(scene, geomID, RTC_USER_VERTEX_BUFFER0, uv, 0, sizeof(TextureCoord), numVertices);
 	}
 
 	{
-		Triangle* triangles = (Triangle*)rtcMapBuffer(Scene, geomID, RTC_INDEX_BUFFER);
+		Triangle* triangles = (Triangle*)rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 		assert(triangles);
 
 		size_t index_offset = 0;
 		for (size_t i = 0; i < numTriangles; ++i)
 		{
-			triangles[i].v0 = shape.mesh.indices[3 * i + 0].vertex_index;
-			triangles[i].v1 = shape.mesh.indices[3 * i + 1].vertex_index;
-			triangles[i].v2 = shape.mesh.indices[3 * i + 2].vertex_index;
+			triangles[i].v0 = indices[3 * i + 0];
+			triangles[i].v1 = indices[3 * i + 1];
+			triangles[i].v2 = indices[3 * i + 2];
 		}
 
-		rtcUnmapBuffer(Scene, geomID, RTC_INDEX_BUFFER);
+		rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 	}
 
-	return geomID;
+}
+
+TriangleMesh::~TriangleMesh()
+{
+	if (n)
+	{
+		_aligned_free(n);
+	}
+	if (uv)
+	{
+		_aligned_free(n);
+	}
 }

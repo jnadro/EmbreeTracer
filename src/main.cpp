@@ -5,6 +5,7 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include "Mesh.h"
 #include "PPMImage.h"
 
 static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* str)
@@ -105,15 +106,19 @@ int main(int argc, char* argv[])
 		rtcUnmapBuffer(scene, quad, RTC_INDEX_BUFFER);
 	}
 
+	TriangleMesh* Sphere = LoadObjMesh("quad.obj", scene);
+	assert(Sphere);
+
 	rtcCommit(scene);
 
 	// start tracing
 	{
-		unsigned width = 200;
-		unsigned height = 200;
+		unsigned width = 800;
+		unsigned height = 800;
 		const float aspectRatio = (float)width / height;
 
 		PPMImage colorAOV(width, height);
+		PPMImage uvAOV(width, height);
 
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
 
@@ -150,18 +155,23 @@ int main(int argc, char* argv[])
 				rtcIntersect(scene, cameraRay);
 				if (cameraRay.geomID != RTC_INVALID_GEOMETRY_ID)
 				{
-					vec4 color;
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &color.x, nullptr, nullptr, nullptr, nullptr, nullptr, 4);
+					vec4 color{ 1.0f, 0.0f, 0.04f };
 					colorAOV.SetPixel(x, y, color.x, color.y, color.z);
+
+					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
+					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
 				}
 				else
 				{
 					colorAOV.SetPixel(x, y, 0.5f, 0.5f, 0.5f);
+					uvAOV.SetPixel(x, y, 0.0f, 0.0f, 0.0f);
 				}
 			}
 		}
 
 		colorAOV.Write("color.ppm");
+		uvAOV.Write("uv.ppm");
 	}
 
 	rtcDeleteGeometry(scene, quad);
