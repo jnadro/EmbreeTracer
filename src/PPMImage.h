@@ -13,5 +13,5 @@ public:
 private:
 	unsigned Width = 0;
 	unsigned Height = 0;
-	unsigned* Pixels = nullptr;
+	unsigned char* Pixels = nullptr;
 };

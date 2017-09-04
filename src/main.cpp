@@ -157,9 +157,9 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		colorAOV.Write("color.ppm");
-		uvAOV.Write("uv.ppm");
-		normalAOV.Write("normal.ppm");
+		colorAOV.Write("color.tga");
+		uvAOV.Write("uv.tga");
+		normalAOV.Write("normal.tga");
 	}
 
 	rtcDeleteScene(scene);
