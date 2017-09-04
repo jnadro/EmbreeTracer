@@ -46,7 +46,7 @@ TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene)
 TriangleMesh::TriangleMesh(
 	RTCScene InScene, 
 	const std::vector<float>& p, 
-	const std::vector<float>& n, 
+	const std::vector<float>& normals, 
 	const std::vector<float>& uvs,
 	const std::vector<int>& indices,
 	size_t numTriangles, 
@@ -75,10 +75,24 @@ TriangleMesh::TriangleMesh(
 		uv = static_cast<TextureCoord*>(_aligned_malloc(numBytes, alignment));
 		for (size_t v = 0; v < numVertices; ++v)
 		{
-			uv[0].u = uvs[2 * v + 0];
-			uv[0].v = uvs[2 * v + 1];
+			uv[v].u = uvs[2 * v + 0];
+			uv[v].v = uvs[2 * v + 1];
 		}
 		rtcSetBuffer2(scene, geomID, RTC_USER_VERTEX_BUFFER0, uv, 0, sizeof(TextureCoord), numVertices);
+	}
+
+	if (normals.size())
+	{
+		const size_t numBytes = normals.size() * sizeof(float);
+		assert((normals.size() / 3) == numVertices);
+		n = static_cast<Normal*>(_aligned_malloc(numBytes, alignment));
+		for (size_t v = 0; v < numVertices; ++v)
+		{
+			n[v].x = normals[3 * v + 0];
+			n[v].y = normals[3 * v + 1];
+			n[v].z = normals[3 * v + 2];
+		}
+		rtcSetBuffer2(scene, geomID, RTC_USER_VERTEX_BUFFER1, n, 0, sizeof(Normal), numVertices);
 	}
 
 	{
@@ -95,7 +109,6 @@ TriangleMesh::TriangleMesh(
 
 		rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 	}
-
 }
 
 TriangleMesh::~TriangleMesh()

@@ -86,26 +86,6 @@ int main(int argc, char* argv[])
 
 	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1 | RTC_INTERPOLATE);
 
-	unsigned quad = rtcNewTriangleMesh2(scene, RTC_GEOMETRY_STATIC, 2, 4);
-	{
-		vec4* vertices = (vec4*)rtcMapBuffer(scene, quad, RTC_VERTEX_BUFFER);
-		assert(vertices);
-		vertices[0].x = 0.0f; vertices[0].y = 1.0f; vertices[0].z = -1.0f; vertices[0].a = 1.0f;
-		vertices[1].x = 1.0f; vertices[1].y = 0.0f; vertices[1].z = -1.0f; vertices[1].a = 1.0f;
-		vertices[2].x = 0.0f; vertices[2].y = 0.0f; vertices[2].z = -1.0f; vertices[2].a = 1.0f;
-		vertices[3].x = 1.0f; vertices[3].y = 1.0f; vertices[3].z = -1.0f; vertices[3].a = 1.0f;
-		rtcUnmapBuffer(scene, quad, RTC_VERTEX_BUFFER);
-
-		rtcSetBuffer2(scene, quad, RTC_USER_VERTEX_BUFFER0, colors, 0, sizeof(vec4));
-	}
-	{
-		Triangle* triangles = (Triangle*)rtcMapBuffer(scene, quad, RTC_INDEX_BUFFER);
-		assert(triangles);
-		triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-		triangles[1].v0 = 0; triangles[1].v1 = 3; triangles[1].v2 = 1;
-		rtcUnmapBuffer(scene, quad, RTC_INDEX_BUFFER);
-	}
-
 	TriangleMesh* Sphere = LoadObjMesh("quad.obj", scene);
 	assert(Sphere);
 
@@ -119,6 +99,7 @@ int main(int argc, char* argv[])
 
 		PPMImage colorAOV(width, height);
 		PPMImage uvAOV(width, height);
+		PPMImage normalAOV(width, height);
 
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
 
@@ -161,20 +142,26 @@ int main(int argc, char* argv[])
 					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
 					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
 					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
+
+					vec4 n{ 0.0f, 0.0f, 0.0f, 0.0f };
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER1, &n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
+					normalAOV.SetPixel(x, y, n.x, n.y, n.z);
 				}
 				else
 				{
-					colorAOV.SetPixel(x, y, 0.5f, 0.5f, 0.5f);
-					uvAOV.SetPixel(x, y, 0.0f, 0.0f, 0.0f);
+					vec4 backgroundColor{ 0.5f, 0.5f, 0.5f, 1.0f };
+					colorAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
+					uvAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
+					normalAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 				}
 			}
 		}
 
 		colorAOV.Write("color.ppm");
 		uvAOV.Write("uv.ppm");
+		normalAOV.Write("normal.ppm");
 	}
 
-	rtcDeleteGeometry(scene, quad);
 	rtcDeleteScene(scene);
 	rtcDeleteDevice(device);
 
