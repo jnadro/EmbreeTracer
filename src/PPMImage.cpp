@@ -47,7 +47,7 @@ void PPMImage::Write(const char* Filename) const
 			for (unsigned x = 0; x < Width; ++x)
 			{
 				const unsigned& pixel = Pixels[y * Width + x];
-				file << ((pixel & 0x00FF0000) >> 16) << " " << ((pixel & 0x0000FF00) >> 8) << " " << (pixel & 0x000000FF) << std::endl;
+				file << ((pixel & 0x00FF0000) >> 16) << " " << ((pixel & 0x0000FF00) >> 8) << " " << (pixel & 0x000000FF) << "\n";
 			}
 		}
 
