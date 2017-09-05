@@ -113,6 +113,8 @@ TriangleMesh::TriangleMesh(
 
 TriangleMesh::~TriangleMesh()
 {
+	rtcDeleteGeometry(scene, geomID);
+
 	if (n)
 	{
 		_aligned_free(n);

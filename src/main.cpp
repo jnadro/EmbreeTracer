@@ -79,6 +79,12 @@ void translate(float matrix[4][4], const vec3& translation)
 
 int main(int argc, char* argv[])
 {
+	if (argc != 2)
+	{
+		std::cout << "Usage: " << argv[0] << " input.obj\n";
+		return 1;
+	}
+
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
 
@@ -86,8 +92,9 @@ int main(int argc, char* argv[])
 
 	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1 | RTC_INTERPOLATE);
 
-	TriangleMesh* Sphere = LoadObjMesh("quad.obj", scene);
-	assert(Sphere);
+	const char* InputObjFilename = argv[1];
+	TriangleMesh* Mesh = LoadObjMesh(InputObjFilename, scene);
+	assert(Mesh);
 
 	rtcCommit(scene);
 
@@ -162,6 +169,7 @@ int main(int argc, char* argv[])
 		normalAOV.Write("normal.tga");
 	}
 
+	delete Mesh;
 	rtcDeleteScene(scene);
 	rtcDeleteDevice(device);
 
