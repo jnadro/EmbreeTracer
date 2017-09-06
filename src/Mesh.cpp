@@ -29,18 +29,53 @@ TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene)
 	// only deal with first shape.
 	const tinyobj::shape_t& shape = shapes[0];
 
-	const size_t numTriangles = shape.mesh.num_face_vertices.size();
-	const size_t numVertices = attrib.vertices.size() / 3;
-
-	// ineffcient
+	std::vector<float> positions, normals, texcoords;
 	std::vector<int> indices;
-	indices.reserve(shape.mesh.indices.size());
-	for (size_t i = 0; i < shape.mesh.indices.size(); ++i)
+
+	int index = 0;
+	size_t indexOffset = 0;
+
+	// for each face
+	//for (const unsigned char& f : shape.mesh.num_face_vertices)
+	for (int i = 0; i < shape.mesh.num_face_vertices.size(); ++i)
 	{
-		indices.push_back(shape.mesh.indices[i].vertex_index);
+		const unsigned char& fv = shape.mesh.num_face_vertices[i];
+
+		// we only deal with triangulated meshes.
+		assert(fv == 3);
+
+		// for each vert of face
+		for (size_t v = 0; v < fv; ++v)
+		{
+			tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
+			tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
+			tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
+			tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
+			tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
+			tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
+			tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
+			tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
+			tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
+
+			positions.push_back(vx);
+			positions.push_back(vy);
+			positions.push_back(vz);
+
+			normals.push_back(nx);
+			normals.push_back(ny);
+			normals.push_back(nz);
+
+			texcoords.push_back(tx);
+			texcoords.push_back(ty);
+
+			indices.push_back(index++);
+		}
+		indexOffset += fv;
 	}
 
-	return new TriangleMesh(scene, attrib.vertices, attrib.normals, attrib.texcoords, indices, numTriangles, numVertices);
+	const size_t numTriangles = shape.mesh.num_face_vertices.size();
+	const size_t numVertices = positions.size() / 3;
+	return new TriangleMesh(scene, positions, normals, texcoords, indices, numTriangles, numVertices);
 }
 
 TriangleMesh::TriangleMesh(
@@ -67,7 +102,7 @@ TriangleMesh::TriangleMesh(
 		}
 		rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
 	}
-
+	
 	if (uvs.size())
 	{
 		const size_t numBytes = uvs.size() * sizeof(float);
@@ -94,12 +129,11 @@ TriangleMesh::TriangleMesh(
 		}
 		rtcSetBuffer2(scene, geomID, RTC_USER_VERTEX_BUFFER1, n, 0, sizeof(Normal), numVertices);
 	}
-
+	
 	{
 		Triangle* triangles = (Triangle*)rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
 		assert(triangles);
 
-		size_t index_offset = 0;
 		for (size_t i = 0; i < numTriangles; ++i)
 		{
 			triangles[i].v0 = indices[3 * i + 0];
@@ -113,14 +147,12 @@ TriangleMesh::TriangleMesh(
 
 TriangleMesh::~TriangleMesh()
 {
-	rtcDeleteGeometry(scene, geomID);
-
 	if (n)
 	{
 		_aligned_free(n);
 	}
 	if (uv)
 	{
-		_aligned_free(n);
+		_aligned_free(uv);
 	}
 }

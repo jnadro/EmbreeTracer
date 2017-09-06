@@ -147,12 +147,12 @@ int main(int argc, char* argv[])
 					colorAOV.SetPixel(x, y, color.x, color.y, color.z);
 
 					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v,RTC_USER_VERTEX_BUFFER0,&uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
 					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
-
+					
 					vec4 n{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER1, &n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
-					normalAOV.SetPixel(x, y, n.x, n.y, n.z);
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v,RTC_USER_VERTEX_BUFFER1,&n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
+					normalAOV.SetPixel(x, y, n.x*0.5f+0.5f, n.y*0.5f + 0.5f, n.z*0.5f + 0.5f);
 				}
 				else
 				{
