@@ -111,6 +111,12 @@ int main(int argc, char* argv[])
 
 	glfwMakeContextCurrent(window);
 
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) 
+	{
+		std::cout << "Failed to load OpenGL functions.";
+		return -1;
+	}
+
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
 
