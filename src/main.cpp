@@ -5,6 +5,7 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "Mesh.h"
