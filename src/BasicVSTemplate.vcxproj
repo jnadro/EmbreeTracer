@@ -104,6 +104,7 @@ copy $(ProjectDir)Embree\lib\tbb.dll $(OutDir)tbb.dll</Command>
     <ClCompile Include="PPMImage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FullscreenQuad.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PPMImage.h" />
     <ClInclude Include="stb_image_write.h" />

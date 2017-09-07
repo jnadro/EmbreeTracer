@@ -34,5 +34,8 @@
     <ClInclude Include="stb_image_write.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="FullscreenQuad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

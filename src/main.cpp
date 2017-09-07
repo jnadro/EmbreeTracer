@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "FullscreenQuad.h"
 #include "Mesh.h"
 #include "PPMImage.h"
 
@@ -203,8 +204,10 @@ int main(int argc, char* argv[])
 		normalAOV.Write("normal.tga");
 	}
 
+	FullScreenQuad quad;
 	while (!glfwWindowShouldClose(window)) 
 	{
+		quad.draw();
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
