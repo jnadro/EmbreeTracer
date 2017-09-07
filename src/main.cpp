@@ -5,6 +5,8 @@
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
 
+#include <GLFW/glfw3.h>
+
 #include "Mesh.h"
 #include "PPMImage.h"
 
@@ -79,11 +81,34 @@ void translate(float matrix[4][4], const vec3& translation)
 
 int main(int argc, char* argv[])
 {
+	unsigned width = 800;
+	unsigned height = 800;
+
 	if (argc == 1)
 	{
 		std::cout << "Usage: " << argv[0] << " input1.obj input2.obj input3.obj\n";
 		return 1;
 	}
+
+	if (!glfwInit())
+	{
+		std::cout << "Failed to init GLFW.";
+		return -1;
+	}
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+	GLFWwindow* window = glfwCreateWindow(width, height, "EmbreeTracer", nullptr, nullptr);
+	if (!window)
+	{
+		glfwTerminate();
+		std::cout << "Unable to create GLFW Window.";
+		return -1;
+	}
+
+	glfwMakeContextCurrent(window);
 
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
@@ -104,8 +129,6 @@ int main(int argc, char* argv[])
 
 	// start tracing
 	{
-		unsigned width = 800;
-		unsigned height = 800;
 		const float aspectRatio = (float)width / height;
 
 		PPMImage colorAOV(width, height);
@@ -171,6 +194,12 @@ int main(int argc, char* argv[])
 		colorAOV.Write("color.tga");
 		uvAOV.Write("uv.tga");
 		normalAOV.Write("normal.tga");
+	}
+
+	while (!glfwWindowShouldClose(window)) 
+	{
+		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 
 	for (TriangleMesh* Mesh : Meshes)
