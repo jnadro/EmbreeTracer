@@ -202,6 +202,8 @@ int main(int argc, char* argv[])
 		glfwPollEvents();
 	}
 
+	glfwTerminate();
+
 	for (TriangleMesh* Mesh : Meshes)
 	{
 		delete Mesh;
