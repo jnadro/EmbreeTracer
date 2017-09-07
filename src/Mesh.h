@@ -27,4 +27,4 @@ public:
 		size_t numVertices);
 };
 
-TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene);
+void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes);

@@ -79,9 +79,9 @@ void translate(float matrix[4][4], const vec3& translation)
 
 int main(int argc, char* argv[])
 {
-	if (argc != 2)
+	if (argc == 1)
 	{
-		std::cout << "Usage: " << argv[0] << " input.obj\n";
+		std::cout << "Usage: " << argv[0] << " input1.obj input2.obj input3.obj\n";
 		return 1;
 	}
 
@@ -92,9 +92,13 @@ int main(int argc, char* argv[])
 
 	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1 | RTC_INTERPOLATE);
 
-	const char* InputObjFilename = argv[1];
-	TriangleMesh* Mesh = LoadObjMesh(InputObjFilename, scene);
-	assert(Mesh);
+	std::vector<TriangleMesh*> Meshes;
+
+	const int numObjFiles = argc - 1;
+	for (int i = 0; i < numObjFiles; ++i)
+	{
+		LoadObjMesh(argv[i], scene, Meshes);
+	}
 
 	rtcCommit(scene);
 
@@ -111,12 +115,12 @@ int main(int argc, char* argv[])
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
 
 		float CameraToWorld[4][4]{
-			{1.0f, 0.0f, 0.0f, 0.0f},
-			{0.0f, 1.0f, 0.0f, 0.0f},
-			{0.0f, 0.0f, 1.0f, 0.0f},
+			{1.0f, 0.0f, 0.0f, 3.04068f },
+			{0.0f, 1.0f, 0.0f, 3.17153f },
+			{0.0f, 0.0f, 1.0f, 3.20454f },
 			{0.0f, 0.0f, 0.0f, 1.0f}
 		};
-		translate(CameraToWorld, vec3{0.0f, 0.0f, 2.0f});
+		//translate(CameraToWorld, vec3{0.0f, 0.0f, 2.0f});
 
 		for (unsigned y = 0; y < height; ++y)
 		{
@@ -147,11 +151,11 @@ int main(int argc, char* argv[])
 					colorAOV.SetPixel(x, y, color.x, color.y, color.z);
 
 					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v,RTC_USER_VERTEX_BUFFER0,&uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
 					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
 					
 					vec4 n{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v,RTC_USER_VERTEX_BUFFER1,&n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
+					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER1, &n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
 					normalAOV.SetPixel(x, y, n.x*0.5f+0.5f, n.y*0.5f + 0.5f, n.z*0.5f + 0.5f);
 				}
 				else
@@ -169,7 +173,10 @@ int main(int argc, char* argv[])
 		normalAOV.Write("normal.tga");
 	}
 
-	delete Mesh;
+	for (TriangleMesh* Mesh : Meshes)
+	{
+		delete Mesh;
+	}
 	rtcDeleteScene(scene);
 	rtcDeleteDevice(device);
 

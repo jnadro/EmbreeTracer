@@ -11,7 +11,7 @@ struct TextureCoord { float u, v; };
 struct Triangle { int v0, v1, v2; };
 const size_t alignment = 16;
 
-TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene)
+void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -23,59 +23,60 @@ TriangleMesh* LoadObjMesh(const std::string & Filename, RTCScene scene)
 	if (ret == false || shapes.size() < 1)
 	{
 		std::cerr << err << std::endl;
-		return false;
+		return;
 	}
 
-	// only deal with first shape.
-	const tinyobj::shape_t& shape = shapes[0];
-
-	std::vector<float> positions, normals, texcoords;
-	std::vector<int> indices;
-
-	int index = 0;
-	size_t indexOffset = 0;
-
-	// for each face
-	//for (const unsigned char& f : shape.mesh.num_face_vertices)
-	for (int i = 0; i < shape.mesh.num_face_vertices.size(); ++i)
+	for (const tinyobj::shape_t& shape : shapes)
 	{
-		const unsigned char& fv = shape.mesh.num_face_vertices[i];
+		std::vector<float> positions, normals, texcoords;
+		std::vector<int> indices;
 
-		// we only deal with triangulated meshes.
-		assert(fv == 3);
+		int index = 0;
+		size_t indexOffset = 0;
 
-		// for each vert of face
-		for (size_t v = 0; v < fv; ++v)
+		// for each face
+		//for (const unsigned char& f : shape.mesh.num_face_vertices)
+		for (int i = 0; i < shape.mesh.num_face_vertices.size(); ++i)
 		{
-			tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
-			tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-			tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-			tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-			tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-			tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-			tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
-			tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-			tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
+			const unsigned char& fv = shape.mesh.num_face_vertices[i];
 
-			positions.push_back(vx);
-			positions.push_back(vy);
-			positions.push_back(vz);
+			// we only deal with triangulated meshes.
+			assert(fv == 3);
 
-			normals.push_back(nx);
-			normals.push_back(ny);
-			normals.push_back(nz);
+			// for each vert of face
+			for (size_t v = 0; v < fv; ++v)
+			{
+				tinyobj::index_t idx = shape.mesh.indices[indexOffset + v];
+				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
+				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
+				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
+				tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
+				tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
+				tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
+				tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
+				tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 
-			texcoords.push_back(tx);
-			texcoords.push_back(ty);
+				positions.push_back(vx);
+				positions.push_back(vy);
+				positions.push_back(vz);
 
-			indices.push_back(index++);
+				normals.push_back(nx);
+				normals.push_back(ny);
+				normals.push_back(nz);
+
+				texcoords.push_back(tx);
+				texcoords.push_back(ty);
+
+				indices.push_back(index++);
+			}
+			indexOffset += fv;
 		}
-		indexOffset += fv;
-	}
 
-	const size_t numTriangles = shape.mesh.num_face_vertices.size();
-	const size_t numVertices = positions.size() / 3;
-	return new TriangleMesh(scene, positions, normals, texcoords, indices, numTriangles, numVertices);
+		const size_t numTriangles = shape.mesh.num_face_vertices.size();
+		const size_t numVertices = positions.size() / 3;
+		TriangleMesh* mesh = new TriangleMesh(scene, positions, normals, texcoords, indices, numTriangles, numVertices);
+		OutMeshes.push_back(mesh);
+	}
 }
 
 TriangleMesh::TriangleMesh(
