@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	const int numObjFiles = argc - 1;
 	for (int i = 0; i < numObjFiles; ++i)
 	{
-		LoadObjMesh(argv[i], scene, Meshes);
+		LoadObjMesh(argv[i + 1], scene, Meshes);
 	}
 
 	rtcCommit(scene);
@@ -115,12 +115,12 @@ int main(int argc, char* argv[])
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
 
 		float CameraToWorld[4][4]{
-			{1.0f, 0.0f, 0.0f, 3.04068f },
-			{0.0f, 1.0f, 0.0f, 3.17153f },
-			{0.0f, 0.0f, 1.0f, 3.20454f },
+			{1.0f, 0.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f, 0.0f},
 			{0.0f, 0.0f, 0.0f, 1.0f}
 		};
-		//translate(CameraToWorld, vec3{0.0f, 0.0f, 2.0f});
+		translate(CameraToWorld, vec3{0.0f, 0.8f, 1.85f});
 
 		for (unsigned y = 0; y < height; ++y)
 		{
