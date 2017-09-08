@@ -99,7 +99,8 @@ int main(int argc, char* argv[])
 	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	GLFWwindow* window = glfwCreateWindow(width, height, "EmbreeTracer", nullptr, nullptr);
@@ -112,11 +113,12 @@ int main(int argc, char* argv[])
 
 	glfwMakeContextCurrent(window);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) 
+	if (!gladLoadGL()) 
 	{
 		std::cout << "Failed to load OpenGL functions.";
 		return -1;
 	}
+	glfwSwapInterval(1);
 
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
@@ -135,13 +137,13 @@ int main(int argc, char* argv[])
 
 	rtcCommit(scene);
 
+	PPMImage colorAOV(width, height);
+	PPMImage uvAOV(width, height);
+	PPMImage normalAOV(width, height);
+
 	// start tracing
 	{
 		const float aspectRatio = (float)width / height;
-
-		PPMImage colorAOV(width, height);
-		PPMImage uvAOV(width, height);
-		PPMImage normalAOV(width, height);
 
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
 
@@ -204,14 +206,24 @@ int main(int argc, char* argv[])
 		normalAOV.Write("normal.tga");
 	}
 
+	GLuint normalTex;
+	glGenTextures(1, &normalTex);
+	glBindTexture(GL_TEXTURE_2D, normalTex);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, static_cast<void*>(normalAOV.getPixels()));
+
 	FullScreenQuad quad;
 	while (!glfwWindowShouldClose(window)) 
 	{
-		quad.draw();
+		quad.draw(normalTex);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	glDeleteTextures(1, &normalTex);
+
+	glfwDestroyWindow(window);
 	glfwTerminate();
 
 	for (TriangleMesh* Mesh : Meshes)

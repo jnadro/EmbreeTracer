@@ -21,12 +21,14 @@ public:
 		{
 			"#version 420 core                                                 \n"
 			"in vec2 uv;                                                       \n"
+			"uniform sampler2D s;                                              \n"
 			"                                                                  \n"
 			"out vec4 color;                                                   \n"
 			"                                                                  \n"
 			"void main(void)                                                   \n"
 			"{                                                                 \n"
-			"    color = vec4(uv.x, uv.y, 0.0, 1.0);                           \n"
+			"    vec3 texColor = texture(s, uv).rgb;                           \n"
+			"    color = vec4(texColor, 1.0);                                  \n"
 			"}                                                                 \n"
 		};
 
@@ -74,11 +76,13 @@ public:
 		glDeleteProgram(program);
 	}
 
-	void draw() {
+	void draw(GLuint texture) {
 		static const GLfloat green[] = { 0.0f, 0.25f, 0.0f, 1.0f };
 		glClearBufferfv(GL_COLOR, 0, green);
 
 		glUseProgram(program);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
