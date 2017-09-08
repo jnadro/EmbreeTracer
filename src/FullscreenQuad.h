@@ -27,7 +27,7 @@ public:
 			"                                                                  \n"
 			"void main(void)                                                   \n"
 			"{                                                                 \n"
-			"    vec3 texColor = texture(s, uv).rgb;                           \n"
+			"    vec3 texColor = pow(texture(s, uv).rgb, vec3(1.0f / 2.2f));   \n"
 			"    color = vec4(texColor, 1.0);                                  \n"
 			"}                                                                 \n"
 		};
