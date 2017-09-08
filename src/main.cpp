@@ -210,15 +210,17 @@ int main(int argc, char* argv[])
 	glGenTextures(1, &normalTex);
 	glBindTexture(GL_TEXTURE_2D, normalTex);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, static_cast<void*>(normalAOV.getPixels()));
 
-	FullScreenQuad quad;
-	while (!glfwWindowShouldClose(window)) 
 	{
-		quad.draw(normalTex);
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		FullScreenQuad quad;
+		while (!glfwWindowShouldClose(window))
+		{
+			quad.draw(normalTex);
+			glfwSwapBuffers(window);
+			glfwPollEvents();
+		}
 	}
 
 	glDeleteTextures(1, &normalTex);
