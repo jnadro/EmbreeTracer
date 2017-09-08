@@ -4,6 +4,11 @@
 
 #include <embree2/rtcore.h>
 
+_declspec(align(16)) struct Material
+{
+	float DiffuseColor[3];
+};
+
 class TriangleMesh
 {
 	// Embree Data
@@ -27,4 +32,4 @@ public:
 		size_t numVertices);
 };
 
-void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes);
+void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes, std::vector<Material>& OutMaterials);

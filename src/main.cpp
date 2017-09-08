@@ -128,12 +128,15 @@ int main(int argc, char* argv[])
 	RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_STATIC, RTC_INTERSECT1 | RTC_INTERPOLATE);
 
 	std::vector<TriangleMesh*> Meshes;
+	std::vector<Material> Materials;
 
 	const int numObjFiles = argc - 1;
 	for (int i = 0; i < numObjFiles; ++i)
 	{
-		LoadObjMesh(argv[i + 1], scene, Meshes);
+		LoadObjMesh(argv[i + 1], scene, Meshes, Materials);
 	}
+
+	assert(Meshes.size() == Materials.size());
 
 	rtcCommit(scene);
 
@@ -180,8 +183,7 @@ int main(int argc, char* argv[])
 				rtcIntersect(scene, cameraRay);
 				if (cameraRay.geomID != RTC_INVALID_GEOMETRY_ID)
 				{
-					vec4 color{ 1.0f, 0.0f, 0.04f };
-					colorAOV.SetPixel(x, y, color.x, color.y, color.z);
+					colorAOV.SetPixel(x, y, Materials[cameraRay.geomID].DiffuseColor[0], Materials[cameraRay.geomID].DiffuseColor[1], Materials[cameraRay.geomID].DiffuseColor[2]);
 
 					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
 					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
@@ -206,24 +208,24 @@ int main(int argc, char* argv[])
 		normalAOV.Write("normal.tga");
 	}
 
-	GLuint normalTex;
-	glGenTextures(1, &normalTex);
-	glBindTexture(GL_TEXTURE_2D, normalTex);
+	GLuint texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, static_cast<void*>(normalAOV.getPixels()));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, static_cast<void*>(colorAOV.getPixels()));
 
 	{
 		FullScreenQuad quad;
 		while (!glfwWindowShouldClose(window))
 		{
-			quad.draw(normalTex);
+			quad.draw(texture);
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 		}
 	}
 
-	glDeleteTextures(1, &normalTex);
+	glDeleteTextures(1, &texture);
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

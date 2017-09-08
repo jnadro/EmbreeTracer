@@ -11,7 +11,7 @@ struct TextureCoord { float u, v; };
 struct Triangle { int v0, v1, v2; };
 const size_t alignment = 16;
 
-void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes)
+void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<TriangleMesh*>& OutMeshes, std::vector<Material>& OutMaterials)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -30,6 +30,7 @@ void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<Trian
 	{
 		std::vector<float> positions, normals, texcoords;
 		std::vector<int> indices;
+		int materialID = -1;
 
 		int index = 0;
 		size_t indexOffset = 0;
@@ -70,7 +71,15 @@ void LoadObjMesh(const std::string & Filename, RTCScene scene, std::vector<Trian
 				indices.push_back(index++);
 			}
 			indexOffset += fv;
+
+			if (materialID == -1)
+			{
+				materialID = shape.mesh.material_ids[i];
+			}
 		}
+
+		tinyobj::material_t& material = materials[materialID];
+		OutMaterials.push_back({ { material.diffuse[0], material.diffuse[1], material.diffuse[2] } });
 
 		const size_t numTriangles = shape.mesh.num_face_vertices.size();
 		const size_t numVertices = positions.size() / 3;
