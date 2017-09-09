@@ -9,9 +9,12 @@
 #include <GLFW/glfw3.h>
 
 #include "FullscreenQuad.h"
+#include "Material.h"
 #include "Mesh.h"
 #include "PPMImage.h"
+#include "Renderer.h"
 #include "ScopedTimer.h"
+#include "VectorTypes.h"
 
 static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* str)
 {
@@ -35,7 +38,6 @@ static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* s
 	}
 }
 
-struct vec4 { float x, y, z, a; };
 struct Triangle { int v0, v1, v2; };
 
 vec4 colors[4] = {
@@ -43,14 +45,6 @@ vec4 colors[4] = {
 	{ 1.0f, 1.0f, 0.0f, 1.0f },
 	{ 0.0f, 1.0f, 0.0f, 1.0f },
 	{ 1.0f, 0.0f, 0.0f, 1.0f } };
-
-struct vec3 
-{ 
-	float x = 0.0f;
-	float y = 0.0f;
-	float z = 0.0f;
-	vec3(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
-};
 
 static RTCRay makeRay(const vec3& org, const vec3& dir)
 {
@@ -188,26 +182,8 @@ int main(int argc, char* argv[])
 				};
 
 				RTCRay cameraRay = makeRay(rayWorldOrigin, rayWorldDir);
-				rtcIntersect(scene, cameraRay);
-				if (cameraRay.geomID != RTC_INVALID_GEOMETRY_ID)
-				{
-					colorAOV.SetPixel(x, y, Materials[cameraRay.geomID].DiffuseColor[0], Materials[cameraRay.geomID].DiffuseColor[1], Materials[cameraRay.geomID].DiffuseColor[2]);
-
-					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
-					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
-
-					vec4 n{ 0.0f, 0.0f, 0.0f, 0.0f };
-					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER1, &n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
-					normalAOV.SetPixel(x, y, n.x*0.5f + 0.5f, n.y*0.5f + 0.5f, n.z*0.5f + 0.5f);
-				}
-				else
-				{
-					vec4 backgroundColor{ 0.5f, 0.5f, 0.5f, 1.0f };
-					colorAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
-					uvAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
-					normalAOV.SetPixel(x, y, backgroundColor.x, backgroundColor.y, backgroundColor.z);
-				}
+				vec3 color = CalculateColor(scene, Materials, cameraRay);
+				colorAOV.SetPixel(x, y, color.x, color.y, color.z);
 			}
 		}
 	}
@@ -218,7 +194,6 @@ int main(int argc, char* argv[])
 		uvAOV.Write("uv.tga");
 		normalAOV.Write("normal.tga");
 	}
-
 
 	GLuint texture;
 	glGenTextures(1, &texture);

@@ -4,10 +4,7 @@
 
 #include <embree2/rtcore.h>
 
-_declspec(align(16)) struct Material
-{
-	float DiffuseColor[3];
-};
+#include "Material.h"
 
 class TriangleMesh
 {
