@@ -102,12 +102,14 @@ copy $(ProjectDir)Embree\lib\tbb.dll $(OutDir)tbb.dll</Command>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PPMImage.cpp" />
+    <ClCompile Include="ScopedTimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FullscreenQuad.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PPMImage.h" />
     <ClInclude Include="stb_image_write.h" />
+    <ClInclude Include="ScopedTimer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -11,6 +11,7 @@
 #include "FullscreenQuad.h"
 #include "Mesh.h"
 #include "PPMImage.h"
+#include "ScopedTimer.h"
 
 static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* str)
 {
@@ -130,15 +131,20 @@ int main(int argc, char* argv[])
 	std::vector<TriangleMesh*> Meshes;
 	std::vector<Material> Materials;
 
-	const int numObjFiles = argc - 1;
-	for (int i = 0; i < numObjFiles; ++i)
 	{
-		LoadObjMesh(argv[i + 1], scene, Meshes, Materials);
+		ScopedTimer MeshLoading("Loading Meshes");
+		const int numObjFiles = argc - 1;
+		for (int i = 0; i < numObjFiles; ++i)
+		{
+			LoadObjMesh(argv[i + 1], scene, Meshes, Materials);
+		}
+		assert(Meshes.size() == Materials.size());
 	}
 
-	assert(Meshes.size() == Materials.size());
-
-	rtcCommit(scene);
+	{
+		ScopedTimer BuildBVH("Building BVH");
+		rtcCommit(scene);
+	}
 
 	PPMImage colorAOV(width, height);
 	PPMImage uvAOV(width, height);
@@ -146,6 +152,8 @@ int main(int argc, char* argv[])
 
 	// start tracing
 	{
+		ScopedTimer BuildBVH("Tracing Scene");
+
 		const float aspectRatio = (float)width / height;
 
 		vec3 origin{ 0.0f, 0.0f, 0.0f };
@@ -156,7 +164,7 @@ int main(int argc, char* argv[])
 			{0.0f, 0.0f, 1.0f, 0.0f},
 			{0.0f, 0.0f, 0.0f, 1.0f}
 		};
-		translate(CameraToWorld, vec3{0.0f, 0.8f, 1.85f});
+		translate(CameraToWorld, vec3{ 0.0f, 0.8f, 1.85f });
 
 		for (unsigned y = 0; y < height; ++y)
 		{
@@ -164,11 +172,11 @@ int main(int argc, char* argv[])
 			{
 				float pixelNDCX = ((float)x + 0.5f) / width;
 				float pixelNDCY = ((float)y + 0.5f) / height;
-				
+
 				float Px = (2.0f * pixelNDCX - 1.0f) * aspectRatio;
 				float Py = (1.0f - 2.0f * pixelNDCY);
 
-				vec3 rayP{Px, Py, -1.0f};
+				vec3 rayP{ Px, Py, -1.0f };
 
 				vec3 rayWorldOrigin{ dot(CameraToWorld[0], origin), dot(CameraToWorld[1], origin), dot(CameraToWorld[2], origin) };
 				vec3 rayPWorld{ dot(CameraToWorld[0], rayP), dot(CameraToWorld[1], rayP), dot(CameraToWorld[2], rayP) };
@@ -188,10 +196,10 @@ int main(int argc, char* argv[])
 					vec4 uv{ 0.0f, 0.0f, 0.0f, 0.0f };
 					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER0, &uv.x, nullptr, nullptr, nullptr, nullptr, nullptr, 2);
 					uvAOV.SetPixel(x, y, uv.x, uv.y, 0.0f);
-					
+
 					vec4 n{ 0.0f, 0.0f, 0.0f, 0.0f };
 					rtcInterpolate2(scene, cameraRay.geomID, cameraRay.primID, cameraRay.u, cameraRay.v, RTC_USER_VERTEX_BUFFER1, &n.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
-					normalAOV.SetPixel(x, y, n.x*0.5f+0.5f, n.y*0.5f + 0.5f, n.z*0.5f + 0.5f);
+					normalAOV.SetPixel(x, y, n.x*0.5f + 0.5f, n.y*0.5f + 0.5f, n.z*0.5f + 0.5f);
 				}
 				else
 				{
@@ -202,11 +210,15 @@ int main(int argc, char* argv[])
 				}
 			}
 		}
+	}
 
+	{
+		ScopedTimer WriteImages("Writing Images");
 		colorAOV.Write("color.tga");
 		uvAOV.Write("uv.tga");
 		normalAOV.Write("normal.tga");
 	}
+
 
 	GLuint texture;
 	glGenTextures(1, &texture);
