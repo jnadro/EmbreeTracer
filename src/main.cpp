@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 
 	// start tracing
 	{
-		ScopedTimer BuildBVH("Tracing Scene");
+		ScopedTimer TraceScene("Tracing Scene");
 
 		const float aspectRatio = (float)width / height;
 
