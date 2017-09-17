@@ -151,8 +151,6 @@ int main(int argc, char* argv[])
 	}
 
 	PPMImage colorAOV(width, height);
-	PPMImage uvAOV(width, height);
-	PPMImage normalAOV(width, height);
 
 	// start tracing
 	{
@@ -201,8 +199,6 @@ int main(int argc, char* argv[])
 	{
 		ScopedTimer WriteImages("Writing Images");
 		colorAOV.Write("color.tga");
-		uvAOV.Write("uv.tga");
-		normalAOV.Write("normal.tga");
 	}
 
 	GLuint texture;
