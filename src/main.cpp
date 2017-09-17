@@ -13,6 +13,7 @@
 #include "Mesh.h"
 #include "PPMImage.h"
 #include "Renderer.h"
+#include "RenderKernels/RenderKernels.h"
 #include "ScopedTimer.h"
 #include "VectorTypes.h"
 
@@ -114,6 +115,15 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	glfwSwapInterval(1);
+
+	HMODULE dll = LoadLibrary(L"RenderKernels.dll");
+	assert(dll != nullptr);
+
+	typedef void(*SimpleFunc)(float* in, float* out, int count);
+	SimpleFunc TestSimple = (SimpleFunc)GetProcAddress(dll, "Simple");
+	float inFloats[5] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+	float outFloats[5] = { 0.0f };
+	TestSimple(inFloats, outFloats, 5);
 
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
