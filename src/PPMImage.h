@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 class PPMImage
 {
@@ -10,10 +11,10 @@ public:
 	void SetPixel(unsigned x, unsigned y, float r, float g, float b);
 	void Write(const char * Filename) const;
 
-	unsigned char* getPixels() { return  Pixels; }
+	uint8_t* getPixels() { return Pixels; }
 
 private:
 	unsigned Width = 0;
 	unsigned Height = 0;
-	unsigned char* Pixels = nullptr;
+	uint8_t* Pixels = nullptr;
 };

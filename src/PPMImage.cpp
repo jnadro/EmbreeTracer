@@ -11,7 +11,7 @@ PPMImage::PPMImage(unsigned SizeX, unsigned SizeY)
 {
 	if (Width > 0 && Height > 0)
 	{
-		Pixels = new unsigned char[Width * Height * 3]();
+		Pixels = new uint8_t[Width * Height * 3]();
 	}
 }
 
@@ -28,9 +28,9 @@ void PPMImage::SetPixel(unsigned x, unsigned y, float r, float g, float b)
 {
 	if (Pixels)
 	{
-		unsigned char red = (unsigned char)(255.0f * r);
-		unsigned char green = (unsigned char)(255.0f * g);
-		unsigned char blue = (unsigned char)(255.0f * b);
+		uint8_t red = (uint8_t)(255.0f * r);
+		uint8_t green = (uint8_t)(255.0f * g);
+		uint8_t blue = (uint8_t)(255.0f * b);
 
 		Pixels[((y * Width + x) * 3) + 0] = red;
 		Pixels[((y * Width + x) * 3) + 1] = green;

@@ -125,6 +125,9 @@ int main(int argc, char* argv[])
 	float outFloats[5] = { 0.0f };
 	TestSimple(inFloats, outFloats, 5);
 
+	typedef void(*CalculateSceneColorFunc)(RTCScene scene, RTCRay* ray, int width, int height, unsigned char* gl_FragCoord);
+	CalculateSceneColorFunc CalculateSceneColor = (CalculateSceneColorFunc)GetProcAddress(dll, "CalculateSceneColor");
+
 	RTCDevice device = rtcNewDevice();
 	EmbreeErrorHandler(nullptr, rtcDeviceGetError(nullptr), nullptr);
 
@@ -148,6 +151,16 @@ int main(int argc, char* argv[])
 	{
 		ScopedTimer BuildBVH("Building BVH");
 		rtcCommit(scene);
+	}
+
+	{
+		PPMImage color(4096, 4096);
+		for (int i = 0; i < 10; ++i)
+		{
+			ScopedTimer TraceScene("ispc Fill Color Buffer");
+			CalculateSceneColor(scene, nullptr, 4096, 4096, color.getPixels());
+		}
+		color.Write("Testispc.ppm");
 	}
 
 	PPMImage colorAOV(width, height);
