@@ -49,8 +49,8 @@ vec4 colors[4] = {
 
 int main(int argc, char* argv[])
 {
-	unsigned width = 800;
-	unsigned height = 800;
+	uint32_t width = 1024;
+	uint32_t height = 1024;
 
 	if (argc == 1)
 	{
@@ -131,12 +131,14 @@ int main(int argc, char* argv[])
 		traceImage(scene, Materials, colorAOV);
 	}
 
+	colorAOV.Write("color.hdr");
+
 	GLuint texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, static_cast<void*>(colorAOV.getPixels()));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
 
 	{
 		FullScreenQuad quad;

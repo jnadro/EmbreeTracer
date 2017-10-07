@@ -90,11 +90,8 @@ static bool intersectScene(RTCScene scene, RTCRay& ray)
 
 static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
 {
-	Radiance color(0.0f, 0.0f, 0.0f);
-	color.x = Materials[ray.geomID].DiffuseColor[0];
-	color.y = Materials[ray.geomID].DiffuseColor[1];
-	color.z = Materials[ray.geomID].DiffuseColor[2];
-	return color;
+	Radiance color(Materials[ray.geomID].DiffuseColor[0], Materials[ray.geomID].DiffuseColor[1], Materials[ray.geomID].DiffuseColor[2]);
+	return color / PI;
 }
 
 static vec3 Q(0.0f, 1.45f, 0.0f);
@@ -106,14 +103,17 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	{
 		// intersection location
 		vec3 P(ray.org[0] + ray.dir[0] * ray.tfar, ray.org[1] + ray.dir[1] * ray.tfar, ray.org[2] + ray.dir[2] * ray.tfar);
-		vec3 L = Q - P;
-		L = normalize(L);
+		vec3 Wi = Q - P;
+		const float distance = Wi.length();
+		Wi = normalize(Wi);
+
 		vec3 N(0.0f, 0.0f, 0.0f);
 		rtcInterpolate2(scene, ray.geomID, ray.primID, ray.u, ray.v, RTC_USER_VERTEX_BUFFER1, &N.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
 		N = normalize(N);
 
-		vec3 Li(1.0f, 1.0f, 1.0f);
-		outgoing = Li * shade(Materials, ray) * std::max(dot(N, L), 0.0f);
+		vec3 Power = vec3(32.0f, 32.0f, 32.0f) / (4.0f * PI * PI);
+		vec3 Li = Power / (distance * distance);
+		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi));
 	}
 	return outgoing;
 }

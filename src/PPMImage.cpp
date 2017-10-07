@@ -6,12 +6,12 @@
 #include <assert.h>
 #include <fstream>
 
-PPMImage::PPMImage(unsigned SizeX, unsigned SizeY)
+PPMImage::PPMImage(uint32_t SizeX, uint32_t SizeY)
 	: Width(SizeX), Height(SizeY)
 {
 	if (Width > 0 && Height > 0)
 	{
-		Pixels = new uint8_t[Width * Height * 3]();
+		Pixels = new float[Width * Height * 3]();
 	}
 }
 
@@ -24,17 +24,13 @@ PPMImage::~PPMImage()
 	}
 }
 
-void PPMImage::SetPixel(unsigned x, unsigned y, float r, float g, float b)
+void PPMImage::SetPixel(uint32_t x, uint32_t y, float r, float g, float b)
 {
 	if (Pixels)
 	{
-		uint8_t red = (uint8_t)(255.0f * r);
-		uint8_t green = (uint8_t)(255.0f * g);
-		uint8_t blue = (uint8_t)(255.0f * b);
-
-		Pixels[((y * Width + x) * 3) + 0] = red;
-		Pixels[((y * Width + x) * 3) + 1] = green;
-		Pixels[((y * Width + x) * 3) + 2] = blue;
+		Pixels[((y * Width + x) * 3) + 0] = r;
+		Pixels[((y * Width + x) * 3) + 1] = g;
+		Pixels[((y * Width + x) * 3) + 2] = b;
 	}
 }
 
@@ -42,7 +38,7 @@ void PPMImage::Write(const char* Filename) const
 {
 	if (Pixels)
 	{
-		int returnCode = stbi_write_tga(Filename, Width, Height, 3, static_cast<void*>(Pixels));
+		int returnCode = stbi_write_hdr(Filename, Width, Height, 3, Pixels);
 		assert(returnCode != 0);
 	}
 }

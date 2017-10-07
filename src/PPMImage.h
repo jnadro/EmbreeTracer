@@ -4,19 +4,19 @@
 class PPMImage
 {
 public:
-	explicit PPMImage(unsigned SizeX, unsigned SizeY);
+	explicit PPMImage(uint32_t SizeX, uint32_t SizeY);
 	~PPMImage();
 	PPMImage() = delete;
 
-	void SetPixel(unsigned x, unsigned y, float r, float g, float b);
+	void SetPixel(uint32_t x, uint32_t y, float r, float g, float b);
 	void Write(const char * Filename) const;
 
-	uint8_t* getPixels() { return Pixels; }
+	float* getPixels() { return Pixels; }
 	uint32_t getWidth() const;
 	uint32_t getHeight() const;
 
 private:
-	unsigned Width = 0;
-	unsigned Height = 0;
-	uint8_t* Pixels = nullptr;
+	uint32_t Width = 0;
+	uint32_t Height = 0;
+	float* Pixels = nullptr;
 };
