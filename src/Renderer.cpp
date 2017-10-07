@@ -94,6 +94,11 @@ static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
 	return color / PI;
 }
 
+float visibility()
+{
+	return 1.0f;
+}
+
 static vec3 Q(0.0f, 1.45f, 0.0f);
 
 static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
@@ -113,7 +118,7 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 
 		vec3 Power = vec3(32.0f, 32.0f, 32.0f) / (4.0f * PI * PI);
 		vec3 Li = Power / (distance * distance);
-		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi));
+		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility();
 	}
 	return outgoing;
 }
