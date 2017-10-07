@@ -23,6 +23,14 @@ struct vec3
 		return *this;
 	}
 
+	inline vec3& vec3::operator-=(const vec3 &rhs)
+	{
+		x -= rhs.x;
+		y -= rhs.y;
+		z -= rhs.z;
+		return *this;
+	}
+
 	inline vec3& vec3::operator*=(const float t) 
 	{
 		x *= t;
@@ -53,6 +61,13 @@ inline vec3 operator+(vec3 lhs, const vec3& rhs)
 	lhs += rhs;
 	return lhs;
 }
+
+inline vec3 operator-(vec3 lhs, const vec3& rhs)
+{
+	lhs -= rhs;
+	return lhs;
+}
+
 
 inline vec3 operator*(vec3 lhs, const vec3& rhs) 
 {
