@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 				};
 
 				RTCRay cameraRay = makeRay(rayWorldOrigin, rayWorldDir);
-				vec3 color = CalculateColor(scene, Materials, cameraRay);
+				vec3 color = Trace(scene, Materials, cameraRay);
 				colorAOV.SetPixel(x, y, color.x, color.y, color.z);
 			}
 		}

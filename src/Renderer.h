@@ -8,4 +8,6 @@
 #include "Material.h"
 #include "VectorTypes.h"
 
+vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay & ray);
+
 vec3 CalculateColor(RTCScene scene, const std::vector<Material>& Materials, RTCRay& rd);
