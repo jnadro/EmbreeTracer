@@ -105,9 +105,33 @@ vec3 CalculateColor(RTCScene scene, const std::vector<Material>& Materials, RTCR
 
 typedef vec3 Radiance;
 
-static Radiance traceRay(const RTCRay& ray)
+static bool intersectScene(RTCScene scene, RTCRay& ray)
 {
-	Radiance outgoing(ray.dir[0] * 0.5f + 0.5f, ray.dir[1] * 0.5f + 0.5f, ray.dir[2] * 0.5f + 0.5f);
+	rtcIntersect(scene, ray);
+	if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
+{
+	Radiance color(0.0f, 0.0f, 0.0f);
+	color.x = Materials[ray.geomID].DiffuseColor[0];
+	color.y = Materials[ray.geomID].DiffuseColor[1];
+	color.z = Materials[ray.geomID].DiffuseColor[2];
+	return color;
+}
+
+static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
+{
+	Radiance outgoing = WorldGetBackground(ray);
+	if (intersectScene(scene, ray))
+	{
+		outgoing = shade(Materials, ray);
+	}
 	return outgoing;
 }
 
@@ -162,7 +186,7 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 	return makeRay(rayWorldOrigin, rayWorldDir);
 }
 
-void traceImage(PPMImage& Color)
+void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color)
 {
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
@@ -172,7 +196,7 @@ void traceImage(PPMImage& Color)
 		for (uint32_t x = 0; x < width; ++x)
 		{
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance Lo = traceRay(cameraRay);
+			Radiance Lo = traceRay(scene, Materials, cameraRay);
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}

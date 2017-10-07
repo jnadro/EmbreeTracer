@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 	// start tracing
 	{
 		ScopedTimer TraceScene("Tracing Scene");
-		traceImage(colorAOV);
+		traceImage(scene, Materials, colorAOV);
 	}
 
 	GLuint texture;

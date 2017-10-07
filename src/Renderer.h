@@ -17,5 +17,5 @@ vec3 CalculateColor(RTCScene scene, const std::vector<Material>& Materials, RTCR
 // 1. Iterates over all pixels of the image
 // 2. Generates a camera ray
 // 3. Traces camera ray into the scene
-void traceImage(PPMImage& Color);
+void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color);
 
