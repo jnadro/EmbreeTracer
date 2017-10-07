@@ -92,5 +92,17 @@ inline float dot(const vec3& v1, const vec3& v2)
 		v1.z * v2.z;
 }
 
+inline float dot(const float row[4], vec3 v)
+{
+	return (row[0] * v.x + row[1] * v.y + row[2] * v.z + row[3] * 1.0f);
+}
+
+inline void translate(float matrix[4][4], const vec3& translation)
+{
+	matrix[0][3] = translation.x;
+	matrix[1][3] = translation.y;
+	matrix[2][3] = translation.z;
+}
+
 struct vec4 { float x, y, z, a; };
 

@@ -12,6 +12,8 @@ public:
 	void Write(const char * Filename) const;
 
 	uint8_t* getPixels() { return Pixels; }
+	uint32_t getWidth() const;
+	uint32_t getHeight() const;
 
 private:
 	unsigned Width = 0;

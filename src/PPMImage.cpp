@@ -46,3 +46,13 @@ void PPMImage::Write(const char* Filename) const
 		assert(returnCode != 0);
 	}
 }
+
+uint32_t PPMImage::getWidth() const
+{
+	return Width;
+}
+
+uint32_t PPMImage::getHeight() const
+{
+	return Height;
+}
