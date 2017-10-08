@@ -77,6 +77,24 @@ vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 
 typedef vec3 Radiance;
 
+static RTCRay makeRay(const vec3& org, const vec3& dir)
+{
+	RTCRay ray{};
+	ray.org[0] = org.x;
+	ray.org[1] = org.y;
+	ray.org[2] = org.z;
+	ray.dir[0] = dir.x;
+	ray.dir[1] = dir.y;
+	ray.dir[2] = dir.z;
+	ray.tnear = 0.0f;
+	ray.tfar = std::numeric_limits<float>::max();
+	ray.time = 0.0f;
+	ray.mask = -1;
+	ray.geomID = RTC_INVALID_GEOMETRY_ID;
+	ray.primID = RTC_INVALID_GEOMETRY_ID;
+	return ray;
+}
+
 static bool intersectScene(RTCScene scene, RTCRay& ray)
 {
 	rtcIntersect(scene, ray);
@@ -94,12 +112,16 @@ static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
 	return color / PI;
 }
 
-float visibility()
+float visibility(RTCScene scene, const vec3& o, const vec3& d)
 {
-	return 1.0f;
+	RTCRay shadowRay = makeRay(o, d);
+	shadowRay.tnear = 0.001f;
+	shadowRay.tfar = 1.0f;
+	rtcOccluded(scene, shadowRay);
+	return shadowRay.geomID ? 1.0f : 0.0f;
 }
 
-static vec3 Q(0.0f, 1.45f, 0.0f);
+static vec3 Q(0.0f, 1.2f, 0.0f);
 
 static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 {
@@ -116,29 +138,11 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 		rtcInterpolate2(scene, ray.geomID, ray.primID, ray.u, ray.v, RTC_USER_VERTEX_BUFFER1, &N.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
 		N = normalize(N);
 
-		vec3 Power = vec3(32.0f, 32.0f, 32.0f) / (4.0f * PI * PI);
+		vec3 Power = vec3(16.0f, 16.0f, 16.0f) / (4.0f * PI * PI);
 		vec3 Li = Power / (distance * distance);
-		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility();
+		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility(scene, P, Q - P);
 	}
 	return outgoing;
-}
-
-static RTCRay makeRay(const vec3& org, const vec3& dir)
-{
-	RTCRay ray{};
-	ray.org[0] = org.x;
-	ray.org[1] = org.y;
-	ray.org[2] = org.z;
-	ray.dir[0] = dir.x;
-	ray.dir[1] = dir.y;
-	ray.dir[2] = dir.z;
-	ray.tnear = 0.0f;
-	ray.tfar = std::numeric_limits<float>::max();
-	ray.time = 0.0f;
-	ray.mask = 0;
-	ray.geomID = RTC_INVALID_GEOMETRY_ID;
-	ray.primID = RTC_INVALID_GEOMETRY_ID;
-	return ray;
 }
 
 static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
