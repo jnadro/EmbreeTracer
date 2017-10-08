@@ -10,7 +10,7 @@ vec3 WorldGetBackground(const RTCRay& ray)
 	return vec3{ 0.5f, 0.5f, 0.5f };
 }
 
-static const float PI = 3.14159265359f;
+static constexpr float PI = 3.14159265359f;
 static const float EPSILON = 0.00003f;
 
 vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
@@ -150,9 +150,12 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 	const float pixelNDCX = ((float)x + 0.5f) / width;
 	const float pixelNDCY = ((float)y + 0.5f) / height;
 
+	constexpr float fovAngle = (34.5159f / 2.0f) * (PI / 180.0f);
+	const float fov = tan(fovAngle);
+
 	const float aspectRatio = (float)width / height;
-	const float Px = (2.0f * pixelNDCX - 1.0f) * aspectRatio;
-	const float Py = (1.0f - 2.0f * pixelNDCY);
+	const float Px = (2.0f * pixelNDCX - 1.0f) * aspectRatio * fov;
+	const float Py = (1.0f - 2.0f * pixelNDCY) * fov;
 
 	vec3 rayP{ Px, Py, -1.0f };
 
@@ -164,7 +167,7 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 		{ 0.0f, 0.0f, 1.0f, 0.0f },
 		{ 0.0f, 0.0f, 0.0f, 1.0f }
 	};
-	translate(CameraToWorld, vec3{ 0.0f, 0.8f, 1.85f });
+	translate(CameraToWorld, vec3{ 0.0f, 0.8f, 4.5f });
 
 	vec3 rayWorldOrigin{ dot(CameraToWorld[0], origin), dot(CameraToWorld[1], origin), dot(CameraToWorld[2], origin) };
 	vec3 rayPWorld{ dot(CameraToWorld[0], rayP), dot(CameraToWorld[1], rayP), dot(CameraToWorld[2], rayP) };
