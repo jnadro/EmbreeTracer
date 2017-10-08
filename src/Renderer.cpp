@@ -121,7 +121,7 @@ float visibility(RTCScene scene, const vec3& o, const vec3& d)
 	return shadowRay.geomID ? 1.0f : 0.0f;
 }
 
-static vec3 Q(0.0f, 1.2f, 0.0f);
+static vec3 Q(0.0f, 1.4f, 0.0f);
 
 static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 {
