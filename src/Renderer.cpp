@@ -130,17 +130,17 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	{
 		// intersection location
 		vec3 P(ray.org[0] + ray.dir[0] * ray.tfar, ray.org[1] + ray.dir[1] * ray.tfar, ray.org[2] + ray.dir[2] * ray.tfar);
-		vec3 Wi = Q - P;
-		const float distance = Wi.length();
-		Wi = normalize(Wi);
+		vec3 toLight = Q - P;
+		vec3 Wi = normalize(toLight);
 
 		vec3 N(0.0f, 0.0f, 0.0f);
 		rtcInterpolate2(scene, ray.geomID, ray.primID, ray.u, ray.v, RTC_USER_VERTEX_BUFFER1, &N.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
 		N = normalize(N);
 
-		vec3 Power = vec3(16.0f, 16.0f, 16.0f) / (4.0f * PI * PI);
-		vec3 Li = Power / (distance * distance);
-		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility(scene, P, Q - P);
+		vec3 Power = vec3(4.0f, 4.0f, 4.0f);
+		const float distance = toLight.length();
+		vec3 Li = Power / ((4.0f * PI) * (distance * distance));
+		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility(scene, P, toLight);
 	}
 	return outgoing;
 }
