@@ -112,6 +112,11 @@ inline float dot(const float row[4], vec3 v)
 	return (row[0] * v.x + row[1] * v.y + row[2] * v.z + row[3] * 1.0f);
 }
 
+inline vec3 pow(const vec3& v, const float exp)
+{
+	return vec3(std::powf(v.x, exp), std::powf(v.y, exp), std::powf(v.z, exp));
+}
+
 inline void translate(float matrix[4][4], const vec3& translation)
 {
 	matrix[0][3] = translation.x;

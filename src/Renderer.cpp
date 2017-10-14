@@ -7,11 +7,12 @@
 
 vec3 WorldGetBackground(const RTCRay& ray)
 {
-	return vec3{ 0.5f, 0.5f, 0.5f };
+	return vec3{ 0.0f, 0.0f, 0.0f };
 }
 
 static constexpr float PI = 3.14159265359f;
 static const float EPSILON = 0.00003f;
+static const float gamma = 2.2f;
 
 vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 {
@@ -109,7 +110,7 @@ static bool intersectScene(RTCScene scene, RTCRay& ray)
 static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
 {
 	Radiance color(Materials[ray.geomID].DiffuseColor[0], Materials[ray.geomID].DiffuseColor[1], Materials[ray.geomID].DiffuseColor[2]);
-	return color / PI;
+	return pow(color, gamma) / PI;
 }
 
 float visibility(RTCScene scene, const vec3& o, const vec3& d)
