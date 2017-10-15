@@ -146,7 +146,7 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	return outgoing;
 }
 
-static Radiance pathTraceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
+static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, uint32_t pathDepth)
 {
 	Radiance outgoing = WorldGetBackground(ray);
 	if (intersectScene(scene, ray))
@@ -209,12 +209,14 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
+	static const uint32_t pathDepth = 5;
+
 	for (uint32_t y = 0; y < height; ++y)
 	{
 		for (uint32_t x = 0; x < width; ++x)
 		{
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance Lo = pathTraceRay(scene, Materials, cameraRay);
+			Radiance Lo = pathTraceRayRecursive(scene, Materials, cameraRay, pathDepth);
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}
