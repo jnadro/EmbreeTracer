@@ -146,6 +146,28 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	return outgoing;
 }
 
+static Radiance pathTraceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
+{
+	Radiance outgoing = WorldGetBackground(ray);
+	if (intersectScene(scene, ray))
+	{
+		// intersection location
+		vec3 P(ray.org[0] + ray.dir[0] * ray.tfar, ray.org[1] + ray.dir[1] * ray.tfar, ray.org[2] + ray.dir[2] * ray.tfar);
+		vec3 toLight = Q - P;
+		vec3 Wi = normalize(toLight);
+
+		vec3 N(0.0f, 0.0f, 0.0f);
+		rtcInterpolate2(scene, ray.geomID, ray.primID, ray.u, ray.v, RTC_USER_VERTEX_BUFFER1, &N.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
+		N = normalize(N);
+
+		vec3 Power = vec3(1.0f, 1.0f, 1.0f);
+		const float distance = toLight.length();
+		vec3 Li = Power / (distance * distance);
+		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility(scene, P, toLight);
+	}
+	return outgoing;
+}
+
 static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
 	const float pixelNDCX = ((float)x + 0.5f) / width;
@@ -192,7 +214,7 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 		for (uint32_t x = 0; x < width; ++x)
 		{
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance Lo = traceRay(scene, Materials, cameraRay);
+			Radiance Lo = pathTraceRay(scene, Materials, cameraRay);
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}
