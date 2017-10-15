@@ -14,6 +14,16 @@ static constexpr float PI = 3.14159265359f;
 static const float EPSILON = 0.00003f;
 static const float gamma = 2.2f;
 
+class RandomSample
+{
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> distribution;
+
+public:
+	RandomSample() : distribution(0.0f, 1.0f) {}
+	float next() { return distribution(generator); }
+};
+
 vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 {
 	std::default_random_engine gen;
@@ -122,8 +132,6 @@ float visibility(RTCScene scene, const vec3& o, const vec3& d)
 	return shadowRay.geomID ? 1.0f : 0.0f;
 }
 
-static vec3 Q(0.0f, 1.4f, 0.0f);
-
 static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
 {
 	Radiance outgoing = WorldGetBackground(ray);
@@ -131,6 +139,7 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	{
 		// intersection location
 		vec3 P(ray.org[0] + ray.dir[0] * ray.tfar, ray.org[1] + ray.dir[1] * ray.tfar, ray.org[2] + ray.dir[2] * ray.tfar);
+		vec3 Q(0.0f, 1.4f, 0.0f);
 		vec3 toLight = Q - P;
 		vec3 Wi = normalize(toLight);
 
@@ -146,13 +155,56 @@ static Radiance traceRay(RTCScene scene, const std::vector<Material>& Materials,
 	return outgoing;
 }
 
-static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, uint32_t pathDepth)
+static vec3 uniformSampleHemisphere(RandomSample& sampler)
 {
+	const float r1 = sampler.next();
+	const float r2 = sampler.next();
+	const float sinTheta = std::sqrtf(1.0f - r1 * r1);
+	const float phi = 2.0f * PI * r2;
+	const float x = sinTheta * std::cosf(phi);
+	const float z = sinTheta * std::sinf(phi);
+	return vec3(x, r1, z);
+}
+
+static void createCoordinateSystem(const vec3& N, vec3& Nt, vec3& Nb)
+{
+	if (std::fabs(N.x) > std::fabs(N.y))
+	{
+		Nt = vec3(N.z, 0, -N.x) / std::sqrtf(N.x * N.x + N.z * N.z);
+	}
+	else
+	{
+		Nt = vec3(0, -N.z, N.y) / std::sqrtf(N.y * N.y + N.z * N.z);
+	}
+
+	Nb = cross(N, Nt);
+}
+
+static vec3 getBRDFRay(const vec3& P, const vec3& N, RandomSample& sampler)
+{
+	const vec3 hemisphereSample = uniformSampleHemisphere(sampler);
+	vec3 Nt(0.0f, 0.0f, 0.0f), Nb(0.0f, 0.0f, 0.0f);
+	createCoordinateSystem(N, Nt, Nb);
+	vec3 sampleWorld(
+		hemisphereSample.x * Nb.x + hemisphereSample.y * N.x + hemisphereSample.z * Nt.x,
+		hemisphereSample.x * Nb.y + hemisphereSample.y * N.y + hemisphereSample.z * Nt.y,
+		hemisphereSample.x * Nb.z + hemisphereSample.y * N.z + hemisphereSample.z * Nt.z);
+	return sampleWorld;
+}
+
+static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, RandomSample& sampler, uint32_t pathDepth)
+{
+	if (pathDepth == 0)
+	{
+		return Radiance(0.0f, 0.0f, 0.0f);
+	}
+
 	Radiance outgoing = WorldGetBackground(ray);
 	if (intersectScene(scene, ray))
 	{
 		// intersection location
 		vec3 P(ray.org[0] + ray.dir[0] * ray.tfar, ray.org[1] + ray.dir[1] * ray.tfar, ray.org[2] + ray.dir[2] * ray.tfar);
+		vec3 Q(0.0f, 1.4f, 0.0f);
 		vec3 toLight = Q - P;
 		vec3 Wi = normalize(toLight);
 
@@ -162,8 +214,20 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 
 		vec3 Power = vec3(1.0f, 1.0f, 1.0f);
 		const float distance = toLight.length();
-		vec3 Li = Power / (distance * distance);
-		outgoing = Li * shade(Materials, ray) * std::max(0.0f, dot(N, Wi)) * visibility(scene, P, toLight);
+		vec3 LiDirect = Power / (distance * distance) * visibility(scene, P, toLight) * std::max(0.0f, dot(N, Wi));
+
+		outgoing += LiDirect;
+
+		vec3 IndirectDiffuse(0.0f, 0.0f, 0.0f);
+		uint32_t NumSamples = 16;
+		float pdf = 1.0f / (2.0f * PI);
+		for (uint32_t i = 0; i < NumSamples; ++i)
+		{
+			vec3 worldDirection = getBRDFRay(P, N, sampler);
+			IndirectDiffuse += pathTraceRayRecursive(scene, Materials, makeRay(P, worldDirection), sampler, pathDepth - 1) / pdf * std::max(0.0f, dot(N, worldDirection));
+		}
+
+		outgoing += (IndirectDiffuse / (float)NumSamples) * shade(Materials, ray);
 	}
 	return outgoing;
 }
@@ -209,14 +273,15 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
-	static const uint32_t pathDepth = 5;
+	static const uint32_t pathDepth = 2;
+	RandomSample sampler;
 
 	for (uint32_t y = 0; y < height; ++y)
 	{
 		for (uint32_t x = 0; x < width; ++x)
 		{
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance Lo = pathTraceRayRecursive(scene, Materials, cameraRay, pathDepth);
+			Radiance Lo = pathTraceRayRecursive(scene, Materials, cameraRay, sampler, pathDepth);
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}

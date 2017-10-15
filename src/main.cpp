@@ -41,16 +41,10 @@ static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* s
 
 struct Triangle { int v0, v1, v2; };
 
-vec4 colors[4] = {
-	{ 0.0f, 0.0f, 0.0f, 1.0f },
-	{ 1.0f, 1.0f, 0.0f, 1.0f },
-	{ 0.0f, 1.0f, 0.0f, 1.0f },
-	{ 1.0f, 0.0f, 0.0f, 1.0f } };
-
 int main(int argc, char* argv[])
 {
-	uint32_t width = 1024;
-	uint32_t height = 1024;
+	uint32_t width = 512;
+	uint32_t height = 512;
 
 	if (argc == 1)
 	{
