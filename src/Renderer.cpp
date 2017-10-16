@@ -11,7 +11,7 @@ vec3 WorldGetBackground(const RTCRay& ray)
 }
 
 static constexpr float PI = 3.14159265359f;
-static const float EPSILON = 0.00003f;
+static const float Epsilon = 0.0001f;
 static const float gamma = 2.2f;
 
 class RandomSample
@@ -23,68 +23,6 @@ public:
 	RandomSample() : distribution(0.0f, 1.0f) {}
 	float next() { return distribution(generator); }
 };
-
-vec3 Trace(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray)
-{
-	std::default_random_engine gen;
-	std::uniform_real_distribution<float> distr;
-
-	vec3 color{ 0.0f, 0.0f, 0.0f };
-	vec3 mask{ 1.0f, 1.0f, 1.0f };
-
-	for (int bounce = 0; bounce < 8; ++bounce)
-	{
-		rtcIntersect(scene, ray);
-		if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-		{
-			return color += mask * vec3{ 0.5f, 0.5f, 0.5f };
-		}
-
-		vec4 normal{ 0.0f, 0.0f, 0.0f, 0.0f };
-		rtcInterpolate2(scene, ray.geomID, ray.primID, ray.u, ray.v, RTC_USER_VERTEX_BUFFER1, &normal.x, nullptr, nullptr, nullptr, nullptr, nullptr, 3);
-
-		float rand1 = 2.0f * PI * distr(gen);
-		float rand2 = distr(gen);
-		float rand2s = std::sqrt(rand2);
-
-		// create a local orthogonal coordinate frame centered at the hitpoint
-		vec3 w = vec3{ normal.x, normal.y, normal.z };
-		vec3 axis = fabs(w.x) > 0.1f ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 0.0f, 0.0f);
-		vec3 u = normalize(cross(axis, w));
-		vec3 v = cross(w, u);
-
-		/* use the coordinte frame and random numbers to compute the next ray direction */
-		vec3 newdir = normalize(u * cos(rand1) * rand2s + v * sin(rand1) * rand2s + w * sqrt(1.0f - rand2));
-
-		/* add the colour and light contributions to the accumulated colour */
-		color += mask;
-
-		/* the mask colour picks up surface colours at each bounce */
-		mask *= vec3(Materials[ray.geomID].DiffuseColor[0], Materials[ray.geomID].DiffuseColor[1], Materials[ray.geomID].DiffuseColor[2]);
-
-		/* perform cosine-weighted importance sampling for diffuse surfaces*/
-		mask *= dot(newdir, vec3(normal.x, normal.y, normal.z));
-
-		// update the ray origin
-		ray.org[0] = ray.org[0] + ray.tfar * ray.dir[0] + EPSILON;
-		ray.org[1] = ray.org[1] + ray.tfar * ray.dir[1] + EPSILON;
-		ray.org[2] = ray.org[2] + ray.tfar * ray.dir[2] + EPSILON;
-
-		// update the ray direction
-		ray.dir[0] = newdir.x;
-		ray.dir[1] = newdir.y;
-		ray.dir[2] = newdir.z;
-
-		ray.tnear = 0.0f;
-		ray.tfar = std::numeric_limits<float>::max();
-		ray.time = 0.0f;
-		ray.mask = 0;
-		ray.geomID = RTC_INVALID_GEOMETRY_ID;
-		ray.primID = RTC_INVALID_GEOMETRY_ID;
-	}
-
-	return color;
-}
 
 typedef vec3 Radiance;
 
@@ -214,20 +152,20 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 
 		vec3 Power = vec3(1.0f, 1.0f, 1.0f);
 		const float distance = toLight.length();
-		vec3 LiDirect = Power / (distance * distance) * visibility(scene, P, toLight) * std::max(0.0f, dot(N, Wi));
+		vec3 DirectLighting = Power / (distance * distance) * visibility(scene, P, toLight) * std::max(0.0f, dot(N, Wi));
 
-		outgoing += LiDirect;
-
-		vec3 IndirectDiffuse(0.0f, 0.0f, 0.0f);
-		uint32_t NumSamples = 16;
+		vec3 IndirectLighting(0.0f, 0.0f, 0.0f);
+		uint32_t NumSamples = 128;
 		float pdf = 1.0f / (2.0f * PI);
 		for (uint32_t i = 0; i < NumSamples; ++i)
 		{
 			vec3 worldDirection = getBRDFRay(P, N, sampler);
-			IndirectDiffuse += pathTraceRayRecursive(scene, Materials, makeRay(P, worldDirection), sampler, pathDepth - 1) / pdf * std::max(0.0f, dot(N, worldDirection));
+			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + Epsilon, worldDirection), sampler, pathDepth - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
 		}
 
-		outgoing += (IndirectDiffuse / (float)NumSamples) * shade(Materials, ray);
+		IndirectLighting /= (float)NumSamples;
+
+		outgoing += (DirectLighting + IndirectLighting) * shade(Materials, ray);
 	}
 	return outgoing;
 }
@@ -273,7 +211,7 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
-	static const uint32_t pathDepth = 2;
+	static const uint32_t pathDepth = 4;
 	RandomSample sampler;
 
 	for (uint32_t y = 0; y < height; ++y)
