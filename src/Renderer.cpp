@@ -20,7 +20,7 @@ class RandomSample
 	std::uniform_real_distribution<float> distribution;
 
 public:
-	RandomSample() : distribution(0.0f, 1.0f) {}
+	RandomSample(uint32_t seed) : generator(seed), distribution(0.0f, 1.0f) {}
 	float next() { return distribution(generator); }
 };
 
@@ -130,9 +130,9 @@ static vec3 getBRDFRay(const vec3& P, const vec3& N, RandomSample& sampler)
 	return sampleWorld;
 }
 
-static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, RandomSample& sampler, uint32_t pathDepth)
+static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, RandomSample& sampler, uint32_t bounces)
 {
-	if (pathDepth == 0)
+	if (bounces == 0)
 	{
 		return Radiance(0.0f, 0.0f, 0.0f);
 	}
@@ -155,12 +155,12 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 		vec3 DirectLighting = Power / (distance * distance) * visibility(scene, P, toLight) * std::max(0.0f, dot(N, Wi));
 
 		vec3 IndirectLighting(0.0f, 0.0f, 0.0f);
-		uint32_t NumSamples = 128;
+		uint32_t NumSamples = 1;
 		float pdf = 1.0f / (2.0f * PI);
 		for (uint32_t i = 0; i < NumSamples; ++i)
 		{
 			vec3 worldDirection = getBRDFRay(P, N, sampler);
-			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + Epsilon, worldDirection), sampler, pathDepth - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
+			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + Epsilon, worldDirection), sampler, bounces - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
 		}
 
 		IndirectLighting /= (float)NumSamples;
@@ -206,20 +206,23 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 	return makeRay(rayWorldOrigin, rayWorldDir);
 }
 
-void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color)
+void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration)
 {
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
-	static const uint32_t pathDepth = 4;
-	RandomSample sampler;
+	static const uint32_t bounces = 4;
+	RandomSample sampler(iteration);
 
+	float invIteration = 1.0f / iteration;
 	for (uint32_t y = 0; y < height; ++y)
 	{
 		for (uint32_t x = 0; x < width; ++x)
 		{
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance Lo = pathTraceRayRecursive(scene, Materials, cameraRay, sampler, pathDepth);
+			Radiance currentColor(0.0f, 0.0f, 0.0f);
+			Color.GetPixel(x, y, currentColor.x, currentColor.y, currentColor.z);
+			Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces) * invIteration);
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}

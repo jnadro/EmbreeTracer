@@ -24,6 +24,16 @@ PPMImage::~PPMImage()
 	}
 }
 
+void PPMImage::GetPixel(uint32_t x, uint32_t y, float& r, float& g, float& b)
+{
+	if (Pixels)
+	{
+		r = Pixels[((y * Width + x) * 3) + 0];
+		g = Pixels[((y * Width + x) * 3) + 1];
+		b = Pixels[((y * Width + x) * 3) + 2];
+	}
+}
+
 void PPMImage::SetPixel(uint32_t x, uint32_t y, float r, float g, float b)
 {
 	if (Pixels)

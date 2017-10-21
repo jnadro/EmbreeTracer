@@ -43,8 +43,8 @@ struct Triangle { int v0, v1, v2; };
 
 int main(int argc, char* argv[])
 {
-	uint32_t width = 512;
-	uint32_t height = 512;
+	uint32_t width = 1024;
+	uint32_t height = 1024;
 
 	if (argc == 1)
 	{
@@ -83,12 +83,6 @@ int main(int argc, char* argv[])
 	HMODULE dll = LoadLibrary(L"RenderKernels.dll");
 	assert(dll != nullptr);
 
-	typedef void(*SimpleFunc)(float* in, float* out, int count);
-	SimpleFunc TestSimple = (SimpleFunc)GetProcAddress(dll, "Simple");
-	float inFloats[5] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-	float outFloats[5] = { 0.0f };
-	TestSimple(inFloats, outFloats, 5);
-
 	typedef void(*CalculateSceneColorFunc)(RTCScene scene, RTCRay* ray, int width, int height, unsigned char* gl_FragCoord);
 	CalculateSceneColorFunc CalculateSceneColor = (CalculateSceneColorFunc)GetProcAddress(dll, "CalculateSceneColor");
 
@@ -117,34 +111,41 @@ int main(int argc, char* argv[])
 		rtcCommit(scene);
 	}
 
+	GLuint texture[2];
+	glGenTextures(2, texture);
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, texture[1]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	PPMImage colorAOV(width, height);
 
-	// start tracing
-	{
-		ScopedTimer TraceScene("Tracing Scene");
-		traceImage(scene, Materials, colorAOV);
-	}
-
-	colorAOV.Write("color.hdr");
-
-	GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
-
+	uint32_t b = 0;
 	{
 		FullScreenQuad quad;
+		uint32_t iteration = 1;
 		while (!glfwWindowShouldClose(window))
 		{
-			quad.draw(texture);
+			// start tracing
+			{
+				ScopedTimer TraceScene("Tracing Scene");
+				traceImage(scene, Materials, colorAOV, iteration++);
+			}
+
+			glBindTexture(GL_TEXTURE_2D, texture[b]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
+			b = (b + 1) % 2;
+			quad.draw(texture[b]);
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 		}
 	}
 
-	glDeleteTextures(1, &texture);
+	colorAOV.Write("color.hdr");
+
+	glDeleteTextures(2, texture);
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
