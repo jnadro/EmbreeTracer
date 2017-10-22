@@ -43,8 +43,8 @@ struct Triangle { int v0, v1, v2; };
 
 int main(int argc, char* argv[])
 {
-	uint32_t width = 1024;
-	uint32_t height = 1024;
+	uint32_t width = 512;
+	uint32_t height = 512;
 
 	if (argc == 1)
 	{
@@ -132,6 +132,7 @@ int main(int argc, char* argv[])
 			{
 				ScopedTimer TraceScene("Tracing Scene");
 				traceImage(scene, Materials, colorAOV, iteration++);
+				std::cout << "Iteration: " << iteration << std::endl;
 			}
 
 			glBindTexture(GL_TEXTURE_2D, texture[b]);
