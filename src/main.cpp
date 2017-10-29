@@ -39,8 +39,6 @@ static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* s
 	}
 }
 
-struct Triangle { int v0, v1, v2; };
-
 int main(int argc, char* argv[])
 {
 	uint32_t width = 512;
