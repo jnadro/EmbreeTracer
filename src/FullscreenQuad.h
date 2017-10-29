@@ -22,12 +22,14 @@ public:
 			"#version 420 core                                                 \n"
 			"in vec2 uv;                                                       \n"
 			"uniform sampler2D s;                                              \n"
+			"uniform uint iteration;                                           \n"
 			"                                                                  \n"
 			"out vec4 color;                                                   \n"
 			"                                                                  \n"
 			"void main(void)                                                   \n"
 			"{                                                                 \n"
 			"    vec3 texColor = pow(texture(s, uv).rgb, vec3(1.0f / 2.2f));   \n"
+			"    texColor /= float(iteration);                                 \n"
 			"    color = vec4(texColor, 1.0);                                  \n"
 			"}                                                                 \n"
 		};
@@ -67,6 +69,8 @@ public:
 
 		glLinkProgram(program);
 
+		iterationUniform = glGetUniformLocation(program, "iteration");
+
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
 	}
@@ -76,17 +80,19 @@ public:
 		glDeleteProgram(program);
 	}
 
-	void draw(GLuint texture) {
+	void draw(GLuint texture, uint32_t iteration) {
 		static const GLfloat green[] = { 0.0f, 0.25f, 0.0f, 1.0f };
 		glClearBufferfv(GL_COLOR, 0, green);
 
 		glUseProgram(program);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
+		glUniform1ui(iterationUniform, iteration);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
 private:
 	GLuint program;
 	GLuint vao;
+	GLint iterationUniform;
 };

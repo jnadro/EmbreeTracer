@@ -10,7 +10,7 @@ public:
 
 	void GetPixel(uint32_t x, uint32_t y, float& r, float& g, float& b);
 	void SetPixel(uint32_t x, uint32_t y, float r, float g, float b);
-	void Write(const char * Filename) const;
+	void Write(const char * Filename, uint32_t iteration) const;
 
 	float* getPixels() { return Pixels; }
 	uint32_t getWidth() const;

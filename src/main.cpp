@@ -123,9 +123,9 @@ int main(int argc, char* argv[])
 	PPMImage colorAOV(width, height);
 
 	uint32_t b = 0;
+	uint32_t iteration = 1;
 	{
 		FullScreenQuad quad;
-		uint32_t iteration = 1;
 		while (!glfwWindowShouldClose(window))
 		{
 			// start tracing
@@ -136,15 +136,15 @@ int main(int argc, char* argv[])
 			}
 
 			glBindTexture(GL_TEXTURE_2D, texture[b]);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
 			b = (b + 1) % 2;
-			quad.draw(texture[b]);
+			quad.draw(texture[b], iteration);
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 		}
 	}
 
-	colorAOV.Write("color.hdr");
+	colorAOV.Write("color.hdr", iteration);
 
 	glDeleteTextures(2, texture);
 
