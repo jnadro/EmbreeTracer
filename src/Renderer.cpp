@@ -11,7 +11,7 @@ vec3 WorldGetBackground(const RTCRay& ray)
 }
 
 static constexpr float PI = 3.14159265359f;
-static const float Epsilon = 0.0001f;
+static const float Epsilon = 0.001f;
 static const float gamma = 2.2f;
 
 class RandomSample
@@ -101,7 +101,7 @@ static vec3 uniformSampleHemisphere(RandomSample& sampler)
 	const float phi = 2.0f * PI * r2;
 	const float x = sinTheta * std::cosf(phi);
 	const float z = sinTheta * std::sinf(phi);
-	return vec3(x, r1, z);
+	return normalize(vec3(x, r1, z));
 }
 
 static void createCoordinateSystem(const vec3& N, vec3& Nt, vec3& Nb)
@@ -160,7 +160,7 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 		for (uint32_t i = 0; i < NumSamples; ++i)
 		{
 			vec3 worldDirection = getBRDFRay(P, N, sampler);
-			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + Epsilon, worldDirection), sampler, bounces - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
+			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + worldDirection * Epsilon, worldDirection), sampler, bounces - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
 		}
 
 		IndirectLighting /= (float)NumSamples;
@@ -214,7 +214,6 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 	static const uint32_t bounces = 4;
 	RandomSample sampler(iteration);
 
-	float invIteration = 1.0f / iteration;
 	for (uint32_t y = 0; y < height; ++y)
 	{
 		for (uint32_t x = 0; x < width; ++x)
@@ -222,7 +221,7 @@ void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage
 			RTCRay cameraRay = makeCameraRay(x, y, width, height);
 			Radiance currentColor(0.0f, 0.0f, 0.0f);
 			Color.GetPixel(x, y, currentColor.x, currentColor.y, currentColor.z);
-			Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces) * invIteration);
+			Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces));
 			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 		}
 	}
