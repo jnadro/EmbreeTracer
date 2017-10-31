@@ -58,7 +58,7 @@ static bool intersectScene(RTCScene scene, RTCRay& ray)
 static Radiance shade(const std::vector<Material>& Materials, const RTCRay& ray)
 {
 	Radiance color(Materials[ray.geomID].DiffuseColor[0], Materials[ray.geomID].DiffuseColor[1], Materials[ray.geomID].DiffuseColor[2]);
-	return pow(color, gamma) / PI;
+	return color / PI;
 }
 
 float visibility(RTCScene scene, const vec3& o, const vec3& d)
@@ -114,7 +114,7 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 		return Radiance(0.0f, 0.0f, 0.0f);
 	}
 
-	Radiance outgoing = WorldGetBackground(ray);
+	Radiance outgoing = Radiance(0.0f, 0.0f, 0.0f);
 	if (intersectScene(scene, ray))
 	{
 		// intersection location
@@ -144,6 +144,11 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 
 		outgoing += (DirectLighting + IndirectLighting) * shade(Materials, ray);
 	}
+	else
+	{
+		outgoing += WorldGetBackground(ray);
+	}
+
 	return outgoing;
 }
 
