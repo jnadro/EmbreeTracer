@@ -131,16 +131,10 @@ static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material
 		const float distance = toLight.length();
 		vec3 DirectLighting = Power / (distance * distance) * visibility(scene, P, toLight) * std::max(0.0f, dot(N, Wi));
 
-		vec3 IndirectLighting(0.0f, 0.0f, 0.0f);
-		uint32_t NumSamples = 1;
-		float pdf = 1.0f / (2.0f * PI);
-		for (uint32_t i = 0; i < NumSamples; ++i)
-		{
-			vec3 worldDirection = getBRDFRay(P, N, sampler);
-			IndirectLighting += pathTraceRayRecursive(scene, Materials, makeRay(P + worldDirection * Epsilon, worldDirection), sampler, bounces - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
-		}
+		constexpr float pdf = 1.0f / (2.0f * PI);
 
-		IndirectLighting /= (float)NumSamples;
+		vec3 worldDirection = getBRDFRay(P, N, sampler);
+		vec3 IndirectLighting = pathTraceRayRecursive(scene, Materials, makeRay(P + worldDirection * Epsilon, worldDirection), sampler, bounces - 1) / pdf * std::max(0.0f, dot(N, normalize(worldDirection)));
 
 		outgoing += (DirectLighting + IndirectLighting) * shade(Materials, ray);
 	}
