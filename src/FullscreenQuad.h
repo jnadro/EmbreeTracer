@@ -29,7 +29,7 @@ public:
 			"void main(void)                                                   \n"
 			"{                                                                 \n"
 			"    vec3 texColor = texture(s, uv).rgb;                           \n"
-			"    texColor /= (float)iteration;                                 \n"
+			"    texColor /= float(iteration);                                 \n"
 			"    color = vec4(texColor, 1.0);                                  \n"
 			"}                                                                 \n"
 		};
