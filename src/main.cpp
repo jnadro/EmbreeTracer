@@ -7,6 +7,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "tbb/tbb.h"
 
 #include "FullscreenQuad.h"
 #include "Material.h"
@@ -39,16 +40,63 @@ static void EmbreeErrorHandler(void* userPtr, const RTCError code, const char* s
 	}
 }
 
+void Foo(float& x)
+{
+	x *= 2.0f;
+}
+
+void SerialApplyFoo(float a[], size_t n) 
+{
+	ScopedTimer serial("SerialApplyFoo");
+
+	for (size_t i = 0; i != n; ++i)
+		Foo(a[i]);
+}
+
+void ParallelApplyFoo(float* a, size_t n)
+{
+	ScopedTimer serial("ParallelApplyFoo");
+
+	tbb::parallel_for(tbb::blocked_range<size_t>(0, n), [=](const tbb::blocked_range<size_t>& r)
+	{
+		for (size_t i = r.begin(); i != r.end(); ++i)
+			Foo(a[i]);
+	});
+}
+
+/* size of screen tiles */
+static const size_t TILE_SIZE_X{ 8 };
+static const size_t TILE_SIZE_Y{ 8 };
+
 int main(int argc, char* argv[])
 {
 	uint32_t width = 512;
 	uint32_t height = 512;
+
+	// don't worry about rounding for now.
+	assert(width % TILE_SIZE_X == 0);
+	assert(height % TILE_SIZE_X == 0);
+
+	const size_t numTilesX = width / TILE_SIZE_X;
+	const size_t numTilesY = height / TILE_SIZE_Y;
 
 	if (argc == 1)
 	{
 		std::cout << "Usage: " << argv[0] << " input1.obj input2.obj input3.obj\n";
 		return 1;
 	}
+
+	const size_t n = 1000000;
+	float* a = new float[n];
+	for (size_t i = 0; i < n; ++i)
+	{
+		a[i] = (float)i;
+	}
+
+	SerialApplyFoo(a, n);
+	ParallelApplyFoo(a, n);
+
+	delete[] a;
 
 	if (!glfwInit())
 	{
