@@ -189,8 +189,8 @@ int main(int argc, char* argv[])
 					{
 						for (size_t x = r.cols().begin(); x != r.cols().end(); ++x)
 						{
-							const float r = (float)x / TILE_SIZE_X;
-							const float g = (float)y / TILE_SIZE_Y;
+							const float r = (float)x / 512;
+							const float g = (float)y / 512;
 							testParallel.SetPixel((uint32_t)x, (uint32_t)y, r, g, 0.0f);
 						}
 					}
