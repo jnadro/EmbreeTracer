@@ -167,6 +167,7 @@ int main(int argc, char* argv[])
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	PPMImage colorAOV(width, height);
+	PPMImage testParallel(width, height);
 
 	uint32_t b = 0;
 	uint32_t iteration = 1;
@@ -181,6 +182,21 @@ int main(int argc, char* argv[])
 				std::cout << "Iteration: " << iteration << std::endl;
 			}
 
+			{
+				tbb::parallel_for(tbb::blocked_range2d<size_t>(0, height, TILE_SIZE_Y, 0, width, TILE_SIZE_X), [&testParallel](const tbb::blocked_range2d<size_t>& r)
+				{
+					for (size_t y = r.rows().begin(); y != r.rows().end(); ++y)
+					{
+						for (size_t x = r.cols().begin(); x != r.cols().end(); ++x)
+						{
+							const float r = (float)x / TILE_SIZE_X;
+							const float g = (float)y / TILE_SIZE_Y;
+							testParallel.SetPixel((uint32_t)x, (uint32_t)y, r, g, 0.0f);
+						}
+					}
+				});
+			}
+
 			glBindTexture(GL_TEXTURE_2D, texture[b]);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, static_cast<void*>(colorAOV.getPixels()));
 			b = (b + 1) % 2;
@@ -191,6 +207,7 @@ int main(int argc, char* argv[])
 	}
 
 	colorAOV.Write("color.hdr", iteration);
+	testParallel.Write("parallel.hdr", 1u);
 
 	glDeleteTextures(2, texture);
 
