@@ -10,8 +10,4 @@
 
 class PPMImage;
 
-// 1. Iterates over all pixels of the image
-// 2. Generates a camera ray
-// 3. Traces camera ray into the scene
-void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration);
-
+void renderTile(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration);

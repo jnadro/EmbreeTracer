@@ -13,6 +13,7 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "PPMImage.h"
+#include "Random.h"
 #include "Renderer.h"
 #include "RenderKernels/RenderKernels.h"
 #include "ScopedTimer.h"
@@ -167,34 +168,32 @@ int main(int argc, char* argv[])
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	PPMImage colorAOV(width, height);
-	PPMImage testParallel(width, height);
 
 	uint32_t b = 0;
 	uint32_t iteration = 1;
+
 	{
 		FullScreenQuad quad;
 		while (!glfwWindowShouldClose(window))
 		{
-			// start tracing
 			{
-				ScopedTimer TraceScene("Tracing Scene");
-				traceImage(scene, Materials, colorAOV, iteration++);
-				std::cout << "Iteration: " << iteration << std::endl;
-			}
+				ScopedTimer TraceScene("Parallel Trace Scene");
 
-			{
-				tbb::parallel_for(tbb::blocked_range2d<size_t>(0, height, TILE_SIZE_Y, 0, width, TILE_SIZE_X), [&testParallel](const tbb::blocked_range2d<size_t>& r)
+				tbb::parallel_for(tbb::blocked_range2d<size_t>(0, height, TILE_SIZE_Y, 0, width, TILE_SIZE_X), 
+					[&scene, &Materials, &colorAOV, &iteration](const tbb::blocked_range2d<size_t>& r)
 				{
+					RandomSample sampler(iteration);
+
 					for (size_t y = r.rows().begin(); y != r.rows().end(); ++y)
 					{
 						for (size_t x = r.cols().begin(); x != r.cols().end(); ++x)
 						{
-							const float r = (float)x / 512;
-							const float g = (float)y / 512;
-							testParallel.SetPixel((uint32_t)x, (uint32_t)y, r, g, 0.0f);
+							renderTile((uint32_t)x, (uint32_t)y, scene, sampler, Materials, colorAOV, iteration);
 						}
 					}
 				});
+
+				iteration++;
 			}
 
 			glBindTexture(GL_TEXTURE_2D, texture[b]);
@@ -207,7 +206,6 @@ int main(int argc, char* argv[])
 	}
 
 	colorAOV.Write("color.hdr", iteration);
-	testParallel.Write("parallel.hdr", 1u);
 
 	glDeleteTextures(2, texture);
 

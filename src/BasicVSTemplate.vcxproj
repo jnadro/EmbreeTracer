@@ -110,6 +110,7 @@ copy $(ProjectDir)Embree\lib\tbb.dll $(OutDir)tbb.dll</Command>
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PPMImage.h" />
+    <ClInclude Include="Random.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="ScopedTimer.h" />

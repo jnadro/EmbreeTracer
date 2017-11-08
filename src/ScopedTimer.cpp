@@ -11,8 +11,12 @@ ScopedTimer::ScopedTimer(const std::string& InputMessage)
 
 ScopedTimer::~ScopedTimer()
 {
-	const double elapsed = (GetTime() - time0) * 1000.0;
-	std::cout << message << ": " << elapsed << " ms.\n";
+	std::cout << message << ": " << elapsed() << " ms.\n";
+}
+
+double ScopedTimer::elapsed()
+{
+	return (GetTime() - time0) * 1000.0;
 }
 
 double ScopedTimer::GetTime()

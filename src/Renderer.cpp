@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cmath>
-#include <random>
 
+#include "Random.h"
 #include "Renderer.h"
 #include "PPMImage.h"
 
@@ -13,16 +13,6 @@ vec3 WorldGetBackground(const RTCRay& ray)
 static constexpr float PI = 3.14159265359f;
 static const float Epsilon = 0.001f;
 static const float gamma = 2.2f;
-
-class RandomSample
-{
-	std::default_random_engine generator;
-	std::uniform_real_distribution<float> distribution;
-
-public:
-	RandomSample(uint32_t seed) : generator(seed), distribution(0.0f, 1.0f) {}
-	float next() { return distribution(generator); }
-};
 
 typedef vec3 Radiance;
 
@@ -182,23 +172,16 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 	return makeRay(rayWorldOrigin, rayWorldDir);
 }
 
-void traceImage(RTCScene scene, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration)
+void renderTile(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration)
 {
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
 	static const uint32_t bounces = 4;
-	RandomSample sampler(iteration);
 
-	for (uint32_t y = 0; y < height; ++y)
-	{
-		for (uint32_t x = 0; x < width; ++x)
-		{
-			RTCRay cameraRay = makeCameraRay(x, y, width, height);
-			Radiance currentColor(0.0f, 0.0f, 0.0f);
-			Color.GetPixel(x, y, currentColor.x, currentColor.y, currentColor.z);
-			Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces));
-			Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
-		}
-	}
+	RTCRay cameraRay = makeCameraRay(x, y, width, height);
+	Radiance currentColor(0.0f, 0.0f, 0.0f);
+	Color.GetPixel(x, y, currentColor.x, currentColor.y, currentColor.z);
+	Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces));
+	Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 }

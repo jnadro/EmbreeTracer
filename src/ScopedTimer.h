@@ -10,6 +10,8 @@ public:
 	ScopedTimer() = delete;
 	~ScopedTimer();
 
+	double elapsed();
+
 private:
 	double GetTime();
 
