@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "random_sampler.h"
 #include "Random.h"
 #include "Renderer.h"
 #include "PPMImage.h"
@@ -60,10 +61,10 @@ float visibility(RTCScene scene, const vec3& o, const vec3& d)
 	return shadowRay.geomID ? 1.0f : 0.0f;
 }
 
-static vec3 uniformSampleHemisphere(RandomSample& sampler)
+static vec3 uniformSampleHemisphere(embree::RandomSampler& sampler)
 {
-	const float r1 = sampler.next();
-	const float r2 = sampler.next();
+	const float r1 = RandomSampler_getFloat(sampler);
+	const float r2 = RandomSampler_getFloat(sampler);
 	const float sinTheta = std::sqrtf(1.0f - r1 * r1);
 	const float phi = 2.0f * PI * r2;
 	const float x = sinTheta * std::cosf(phi);
@@ -85,7 +86,7 @@ static void createCoordinateSystem(const vec3& N, vec3& Nt, vec3& Nb)
 	Nb = cross(N, Nt);
 }
 
-static vec3 getBRDFRay(const vec3& P, const vec3& N, RandomSample& sampler)
+static vec3 getBRDFRay(const vec3& P, const vec3& N, embree::RandomSampler& sampler)
 {
 	const vec3 hemisphereSample = uniformSampleHemisphere(sampler);
 	vec3 Nt(0.0f, 0.0f, 0.0f), Nb(0.0f, 0.0f, 0.0f);
@@ -97,7 +98,7 @@ static vec3 getBRDFRay(const vec3& P, const vec3& N, RandomSample& sampler)
 	return sampleWorld;
 }
 
-static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, RandomSample& sampler, uint32_t bounces)
+static Radiance pathTraceRayRecursive(RTCScene scene, const std::vector<Material>& Materials, RTCRay& ray, embree::RandomSampler& sampler, uint32_t bounces)
 {
 	if (bounces == 0)
 	{
@@ -172,8 +173,11 @@ static RTCRay makeCameraRay(uint32_t x, uint32_t y, uint32_t width, uint32_t hei
 	return makeRay(rayWorldOrigin, rayWorldDir);
 }
 
-void renderTile(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration)
+void renderPixel(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration)
 {
+	embree::RandomSampler Sampler;
+	embree::RandomSampler_init(Sampler, (int)x, (int)y, (int)iteration);
+
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
@@ -182,6 +186,6 @@ void renderTile(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, c
 	RTCRay cameraRay = makeCameraRay(x, y, width, height);
 	Radiance currentColor(0.0f, 0.0f, 0.0f);
 	Color.GetPixel(x, y, currentColor.x, currentColor.y, currentColor.z);
-	Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, sampler, bounces));
+	Radiance Lo = currentColor + (pathTraceRayRecursive(scene, Materials, cameraRay, Sampler, bounces));
 	Color.SetPixel(x, y, Lo.x, Lo.y, Lo.z);
 }

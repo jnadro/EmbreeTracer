@@ -10,4 +10,4 @@
 
 class PPMImage;
 
-void renderTile(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration);
+void renderPixel(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, const std::vector<Material>& Materials, PPMImage& Color, uint32_t iteration);

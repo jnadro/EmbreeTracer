@@ -58,5 +58,8 @@
     <ClInclude Include="Random.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="random_sampler.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
