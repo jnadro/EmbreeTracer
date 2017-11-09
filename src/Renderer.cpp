@@ -181,6 +181,9 @@ void renderPixel(uint32_t x, uint32_t y, RTCScene scene, RandomSample& sampler, 
 	const uint32_t width = Color.getWidth();
 	const uint32_t height = Color.getHeight();
 
+	// Can we trace all 4 bounces in a ray packet?
+	// Can we shade all 4 intersection results in ispc?
+	// Will this be faster?
 	static const uint32_t bounces = 4;
 
 	RTCRay cameraRay = makeCameraRay(x, y, width, height);
